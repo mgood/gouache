@@ -1,0 +1,24 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "ev",
+      "str",
+      "^foo",
+      "/str",
+      "/ev",
+      { "temp=": "t" },
+      "^t=",
+      "ev",
+      { "VAR?": "t" },
+      "out",
+      "/ev",
+      "\n",
+      ["done", { "#f": 5, "#n": "g-0" }],
+      null
+    ],
+    "done",
+    { "global decl": ["ev", "/ev", "end", null], "#f": 1 }
+  ],
+  "listDefs": {}
+}
