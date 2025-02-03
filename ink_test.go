@@ -236,6 +236,17 @@ func TestGlobalVar(t *testing.T) {
 	assert.Len(t, choices, 0)
 }
 
+func TestMath(t *testing.T) {
+	root := load(t, "./testdata/math.ink.json")
+	output, choices, _ := Continue(Init(root), root)
+	assert.Equal(t, `2+2=4
+5-3=2
+7/2=3
+2*3=6
+`, output)
+	assert.Len(t, choices, 0)
+}
+
 func TestStory(t *testing.T) {
 	root := load(t, "./testdata/sample.ink.json")
 	output, choices, eval := Continue(Init(root), root)

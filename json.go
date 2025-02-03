@@ -14,7 +14,9 @@ func LoadJSON(r io.Reader) (Element, error) {
 		Version int   `json:"inkVersion"`
 		Root    []any `json:"root"`
 	}
-	if err := json.NewDecoder(r).Decode(&b); err != nil {
+	dec := json.NewDecoder(r)
+	dec.UseNumber()
+	if err := dec.Decode(&b); err != nil {
 		return nil, err
 	}
 	if b.Version != InkVersion {
@@ -32,7 +34,11 @@ func LoadContainer(contents []any) Container {
 			case "#n":
 				c.Name = v.(string)
 			case "#f":
-				c.Flags = ContainerFlag(v.(float64))
+				f, err := v.(json.Number).Float64()
+				if err != nil {
+					panic(err)
+				}
+				c.Flags = ContainerFlag(f)
 			default:
 				n := LoadContainer(v.([]any))
 				n.Name = k
@@ -52,6 +58,19 @@ func LoadContainer(contents []any) Container {
 
 func loadNode(n any) Node {
 	switch n := n.(type) {
+	case json.Number:
+		if s := n.String(); strings.Contains(s, ".") {
+			f, err := n.Float64()
+			if err != nil {
+				panic(err)
+			}
+			return FloatValue(f)
+		}
+		i, err := n.Int64()
+		if err != nil {
+			panic(err)
+		}
+		return IntValue(i)
 	case string:
 		switch n {
 		case "done":
@@ -76,6 +95,14 @@ func loadNode(n any) Node {
 			return Pop{}
 		case "end":
 			return End{}
+		case "+":
+			return Add
+		case "-":
+			return Sub
+		case "/":
+			return Div
+		case "*":
+			return Mul
 		}
 		if s := strings.TrimPrefix(n, "^"); s != n {
 			return Text(s)
@@ -83,9 +110,13 @@ func loadNode(n any) Node {
 		panic(fmt.Errorf("unsupported node: %q", n))
 	case map[string]any:
 		if v, ok := n["*"]; ok {
+			flg, err := n["flg"].(json.Number).Int64()
+			if err != nil {
+				panic(err)
+			}
 			return ChoicePoint{
 				Dest:  Address(v.(string)),
-				Flags: ChoicePointFlag(n["flg"].(float64)),
+				Flags: ChoicePointFlag(flg),
 			}
 		}
 		if v, ok := n["->"]; ok {

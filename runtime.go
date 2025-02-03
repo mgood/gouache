@@ -8,6 +8,10 @@ func (o Output) String() string {
 	return string(o)
 }
 
+type Outputter interface {
+	Output() Output
+}
+
 type Choice struct {
 	Label string
 	Dest  Element
@@ -135,8 +139,13 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		val, s := e.Stack.PopVal()
 		s = s.WithLocal(n.Name, val)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
-	case DivertTargetValue:
+	case DivertTargetValue, IntValue:
 		s := e.Stack.PushVal(n)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case BinOp:
+		b, s := e.Stack.PopVal()
+		a, s := s.PopVal()
+		s = s.PushVal(n(a, b))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Divert:
 		addr := n.Dest
@@ -156,7 +165,8 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, nil, BaseEvaluator{Stack: e.Stack}
 	case Out:
 		val, s := e.Stack.PopVal()
-		return Output(val.(StringValue)), nil, el.Next(), EvalEvaluator{Stack: s}
+		o := val.(Outputter).Output()
+		return o, nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}

@@ -1,5 +1,7 @@
 package gouache
 
+import "fmt"
+
 const InkVersion = 21
 
 type ContainerFlag uint32
@@ -50,6 +52,53 @@ type EndTag struct{}          // "/#"
 type Out struct{}             // "out"
 type Pop struct{}             // "pop"
 type NoOp struct{}            // "pop"
+
+type BinOp func(a, b Value) Value
+
+var Add BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case FloatValue:
+		return a + b.(FloatValue)
+	case IntValue:
+		return a + b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
+var Sub BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case FloatValue:
+		return a - b.(FloatValue)
+	case IntValue:
+		return a - b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
+var Div BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case FloatValue:
+		return a / b.(FloatValue)
+	case IntValue:
+		return a / b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
+var Mul BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case FloatValue:
+		return a * b.(FloatValue)
+	case IntValue:
+		return a * b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
 type SetTemp struct {
 	Name string `json:"temp="`
 }
@@ -64,6 +113,19 @@ type GetVar struct {
 type Value interface{}
 
 type StringValue string // "^text"
+
+func (s StringValue) Output() Output {
+	return Output(s)
+}
+
+type FloatValue float64
+
+type IntValue int64
+
+func (i IntValue) Output() Output {
+	s := fmt.Sprint(i)
+	return Output(s)
+}
 
 type DivertTargetValue struct {
 	Dest Address `json:"^->"`
