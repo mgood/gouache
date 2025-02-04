@@ -1,6 +1,9 @@
 Once upon a time...
 
-1: There were two choices.
-2: There were four lines of content.
-?> There were two choices.
-They lived happily ever after.
+1: Choice one
+2: Choice two
+?> Choice one
+
+1: Then choose another
+?> Then choose another
+The end!
