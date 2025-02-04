@@ -103,6 +103,8 @@ func loadNode(n any) Node {
 			return Div
 		case "*":
 			return Mul
+		case "%":
+			return Mod
 		}
 		if s := strings.TrimPrefix(n, "^"); s != n {
 			return Text(s)

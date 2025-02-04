@@ -229,22 +229,27 @@ func TestPop(t *testing.T) {
 	assert.Len(t, choices, 0)
 }
 
-func TestGlobalVar(t *testing.T) {
-	root := load(t, "./testdata/global.ink.json")
-	output, choices, _ := Continue(Init(root), root)
-	assert.Equal(t, "v=foo\n", output)
-	assert.Len(t, choices, 0)
+func readfile(t *testing.T, fn string) string {
+	t.Helper()
+	b, err := os.ReadFile(fn)
+	require.NoError(t, err)
+	return string(b)
 }
 
-func TestMath(t *testing.T) {
-	root := load(t, "./testdata/math.ink.json")
-	output, choices, _ := Continue(Init(root), root)
-	assert.Equal(t, `2+2=4
-5-3=2
-7/2=3
-2*3=6
-`, output)
-	assert.Len(t, choices, 0)
+func TestSamples(t *testing.T) {
+	for _, name := range []string{
+		"math",
+		"global",
+	} {
+		t.Run(name, func(t *testing.T) {
+			base := "./testdata/" + name + ".ink"
+			root := load(t, base+".json")
+			expected := readfile(t, base+".txt")
+			output, choices, _ := Continue(Init(root), root)
+			assert.Equal(t, expected, output)
+			assert.Len(t, choices, 0)
+		})
+	}
 }
 
 func TestStory(t *testing.T) {

@@ -99,6 +99,15 @@ var Mul BinOp = func(a, b Value) Value {
 	}
 }
 
+var Mod BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case IntValue:
+		return a % b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
 type SetTemp struct {
 	Name string `json:"temp="`
 }
