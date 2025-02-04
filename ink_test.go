@@ -1,6 +1,7 @@
 package gouache
 
 import (
+	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -241,11 +242,20 @@ func TestSamples(t *testing.T) {
 }
 
 func TestStory(t *testing.T) {
-	root := load(t, "./testdata/sample.ink.json")
+	base := "./testdata/sample.ink"
+	expected := readfile(t, base+".txt")
+	root := load(t, base+".json")
+	var b strings.Builder
 	output, choices, eval := Continue(Init(root), root)
-	t.Log(output)
+	b.WriteString(output)
 	for len(choices) > 0 {
+		b.WriteRune('\n')
+		for i, choice := range choices {
+			fmt.Fprintf(&b, "%d: %s\n", i+1, choice.Label)
+		}
+		b.WriteString("?> ")
 		output, choices, eval = Continue(eval, choices[0].Dest)
-		t.Log(output)
+		b.WriteString(output)
 	}
+	assert.Equal(t, expected, b.String())
 }

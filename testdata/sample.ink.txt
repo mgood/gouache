@@ -2,4 +2,5 @@ Once upon a time...
 
 1: There were two choices.
 2: There were four lines of content.
-?> <User input stream closed.>
+?> There were two choices.
+They lived happily ever after.
