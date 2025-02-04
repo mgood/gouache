@@ -215,20 +215,6 @@ func load(t testing.TB, fn string) Element {
 	return el
 }
 
-func TestTempVar(t *testing.T) {
-	root := load(t, "./testdata/tempvar.ink.json")
-	output, choices, _ := Continue(Init(root), root)
-	assert.Equal(t, "t=foo\n", output)
-	assert.Len(t, choices, 0)
-}
-
-func TestPop(t *testing.T) {
-	root := load(t, "./testdata/pop.ink.json")
-	output, choices, _ := Continue(Init(root), root)
-	assert.Equal(t, "t=foo\n", output)
-	assert.Len(t, choices, 0)
-}
-
 func readfile(t *testing.T, fn string) string {
 	t.Helper()
 	b, err := os.ReadFile(fn)
@@ -240,6 +226,8 @@ func TestSamples(t *testing.T) {
 	for _, name := range []string{
 		"math",
 		"global",
+		"tempvar",
+		"pop",
 	} {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"
