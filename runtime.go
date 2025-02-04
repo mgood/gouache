@@ -85,11 +85,21 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case BeginTag:
 		return "", nil, el.Next(), TagEvaluator{Stack: e.Stack}
 	case ChoicePoint:
-		label, stack := e.Stack.PopVal()
-		labelString := label.(StringValue)
+		var label StringValue
+		s := e.Stack
+		if n.Flags&HasChoiceOnlyContent != 0 {
+			var x StringValue
+			x, s = pop[StringValue](s)
+			label = x
+		}
+		if n.Flags&HasStartContent != 0 {
+			var x StringValue
+			x, s = pop[StringValue](s)
+			label = x + label
+		}
 		// TODO error if we can't find the target for this choice
-		choice := &Choice{string(labelString), el.Find(n.Dest)}
-		return "", choice, el.Next(), BaseEvaluator{Stack: stack}
+		choice := &Choice{string(label), el.Find(n.Dest)}
+		return "", choice, el.Next(), BaseEvaluator{Stack: s}
 	case SetVar:
 		val, s := e.Stack.PopVal()
 		s = s.WithGlobal(n.Name, val)
@@ -99,6 +109,11 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
+}
+
+func pop[T any](s *CallFrame) (T, *CallFrame) {
+	val, s := s.PopVal()
+	return val.(T), s
 }
 
 type EvalEvaluator struct {
