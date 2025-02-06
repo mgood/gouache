@@ -191,9 +191,20 @@ func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 	// TODO more general pattern for collecting output that allows access to stuff like tags
 	var output strings.Builder
 	var s Output
+	skipNewline := true
 	var choice *Choice
 	for ; ; s, choice, elem, eval = eval.Step(elem) {
-		output.WriteString(s.String())
+		switch s.String() {
+		case "":
+		case "\n":
+			if !skipNewline {
+				output.WriteString(s.String())
+				skipNewline = true
+			}
+		default:
+			output.WriteString(s.String())
+			skipNewline = false
+		}
 		if choice != nil {
 			choices = append(choices, *choice)
 		}
@@ -225,37 +236,32 @@ func readfile(t *testing.T, fn string) string {
 
 func TestSamples(t *testing.T) {
 	for _, name := range []string{
+		"if-else",
 		"math",
 		"global",
 		"tempvar",
 		"pop",
+		"stitch",
+		"sample",
 	} {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"
-			root := load(t, base+".json")
 			expected := readfile(t, base+".txt")
-			output, choices, _ := Continue(Init(root), root)
-			assert.Equal(t, expected, output)
-			assert.Len(t, choices, 0)
+			root := load(t, base+".json")
+			var b strings.Builder
+			output, choices, eval := Continue(Init(root), root)
+			b.WriteString(output)
+			for len(choices) > 0 {
+				b.WriteRune('\n')
+				for i, choice := range choices {
+					fmt.Fprintf(&b, "%d: %s\n", i+1, choice.Label)
+				}
+				b.WriteString("?> ")
+				output, choices, eval = Continue(eval, choices[0].Dest)
+				b.WriteString(output)
+			}
+			actual := b.String()
+			assert.Equal(t, expected, actual)
 		})
 	}
-}
-
-func TestStory(t *testing.T) {
-	base := "./testdata/sample.ink"
-	expected := readfile(t, base+".txt")
-	root := load(t, base+".json")
-	var b strings.Builder
-	output, choices, eval := Continue(Init(root), root)
-	b.WriteString(output)
-	for len(choices) > 0 {
-		b.WriteRune('\n')
-		for i, choice := range choices {
-			fmt.Fprintf(&b, "%d: %s\n", i+1, choice.Label)
-		}
-		b.WriteString("?> ")
-		output, choices, eval = Continue(eval, choices[0].Dest)
-		b.WriteString(output)
-	}
-	assert.Equal(t, expected, b.String())
 }

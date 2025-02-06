@@ -77,6 +77,13 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			}
 			addr = addrVar.(DivertTargetValue).Dest
 		}
+		if n.Conditional {
+			var cond IntValue
+			cond, e.Stack = pop[IntValue](e.Stack)
+			if cond == 0 {
+				return "", nil, el.Next(), e
+			}
+		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
@@ -104,6 +111,8 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		val, s := e.Stack.PopVal()
 		s = s.WithGlobal(n.Name, val)
 		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+	case NoOp:
+		return "", nil, el.Next(), e
 	case Done, End:
 		return "", nil, nil, e
 	default:
@@ -162,6 +171,10 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		a, s := s.PopVal()
 		s = s.PushVal(n(a, b))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case UnaryOp:
+		a, s := e.Stack.PopVal()
+		s = s.PushVal(n(a))
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Divert:
 		addr := n.Dest
 		if n.Var {
@@ -170,6 +183,13 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
 			addr = addrVar.(DivertTargetValue).Dest
+		}
+		if n.Conditional {
+			var cond IntValue
+			cond, e.Stack = pop[IntValue](e.Stack)
+			if cond == 0 {
+				return "", nil, el.Next(), e
+			}
 		}
 		dest := el.Find(addr)
 		if dest == nil {
@@ -213,6 +233,13 @@ func (e StringEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) 
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
 			addr = addrVar.(DivertTargetValue).Dest
+		}
+		if n.Conditional {
+			var cond IntValue
+			cond, e.Stack = pop[IntValue](e.Stack)
+			if cond == 0 {
+				return "", nil, el.Next(), e
+			}
 		}
 		dest := el.Find(addr)
 		if dest == nil {

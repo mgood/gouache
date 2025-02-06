@@ -39,8 +39,9 @@ type ChoicePoint struct {
 	Flags ChoicePointFlag `json:"flg"`
 }
 type Divert struct {
-	Dest Address `json:"->"`
-	Var  bool    `json:"var"`
+	Dest        Address `json:"->"`
+	Var         bool    `json:"var"`
+	Conditional bool    `json:"c"`
 }
 
 type BeginEval struct{}       // "ev"
@@ -52,6 +53,21 @@ type EndTag struct{}          // "/#"
 type Out struct{}             // "out"
 type Pop struct{}             // "pop"
 type NoOp struct{}            // "pop"
+
+type UnaryOp func(a Value) Value
+
+var Not UnaryOp = func(a Value) Value {
+	switch a := a.(type) {
+	case IntValue:
+		if a == 0 {
+			return IntValue(1)
+		} else {
+			return IntValue(0)
+		}
+	default:
+		panic("unsupported type")
+	}
+}
 
 type BinOp func(a, b Value) Value
 

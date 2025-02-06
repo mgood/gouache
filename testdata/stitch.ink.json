@@ -1,0 +1,53 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      {
+        "->": "one"
+      },
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "one": [
+        "^knot one",
+        "\n",
+        {
+          "->": ".^.stitch"
+        },
+        {
+          "stitch": [
+            "^in stitch one",
+            "\n",
+            {
+              "->": "two"
+            },
+            null
+          ]
+        }
+      ],
+      "two": [
+        "^knot two",
+        "\n",
+        {
+          "->": ".^.stitch"
+        },
+        {
+          "stitch": [
+            "^in stitch two",
+            "\n",
+            "end",
+            null
+          ]
+        }
+      ]
+    }
+  ],
+  "listDefs": {}
+}

@@ -95,6 +95,8 @@ func loadNode(n any) Node {
 			return Pop{}
 		case "end":
 			return End{}
+		case "nop":
+			return NoOp{}
 		case "+":
 			return Add
 		case "-":
@@ -105,6 +107,8 @@ func loadNode(n any) Node {
 			return Mul
 		case "%":
 			return Mod
+		case "!":
+			return Not
 		}
 		if s := strings.TrimPrefix(n, "^"); s != n {
 			return Text(s)
@@ -127,6 +131,9 @@ func loadNode(n any) Node {
 			}
 			if v, ok := n["var"]; ok {
 				r.Var = v.(bool)
+			}
+			if c, ok := n["c"]; ok {
+				r.Conditional = c.(bool)
 			}
 			return r
 		}

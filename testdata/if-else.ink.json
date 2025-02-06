@@ -1,0 +1,109 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "ev",
+      {
+        "VAR?": "yourVariable"
+      },
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^This is written if yourVariable is true.",
+            "\n",
+            {
+              "->": "0.5"
+            },
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "->": ".^.b"
+        },
+        {
+          "b": [
+            "\n",
+            "^Otherwise this is written.",
+            "\n",
+            {
+              "->": "0.5"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "yourVariable"
+      },
+      "!",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^This is written if yourVariable is true.",
+            "\n",
+            {
+              "->": "0.13"
+            },
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "->": ".^.b"
+        },
+        {
+          "b": [
+            "\n",
+            "^Otherwise this is written.",
+            "\n",
+            {
+              "->": "0.13"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "global decl": [
+        "ev",
+        1,
+        {
+          "VAR=": "yourVariable"
+        },
+        "/ev",
+        "end",
+        null
+      ]
+    }
+  ],
+  "listDefs": {}
+}
