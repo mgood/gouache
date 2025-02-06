@@ -112,7 +112,7 @@ func loadNode(n any) Node {
 		case "!":
 			return Not
 		}
-		if s := strings.TrimPrefix(n, "^"); s != n {
+		if s, found := strings.CutPrefix(n, "^"); found {
 			return Text(s)
 		}
 		panic(fmt.Errorf("unsupported node: %q", n))
