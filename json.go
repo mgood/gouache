@@ -107,6 +107,8 @@ func loadNode(n any) Node {
 			return Mul
 		case "%":
 			return Mod
+		case "==":
+			return Eq
 		case "!":
 			return Not
 		}

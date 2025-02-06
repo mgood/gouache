@@ -124,6 +124,13 @@ var Mod BinOp = func(a, b Value) Value {
 	}
 }
 
+var Eq BinOp = func(a, b Value) Value {
+	if a == b {
+		return IntValue(1)
+	}
+	return IntValue(0)
+}
+
 type SetTemp struct {
 	Name string `json:"temp="`
 }

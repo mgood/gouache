@@ -93,7 +93,11 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, el.Next(), TagEvaluator{Stack: e.Stack}
 	case ChoicePoint:
 		var label StringValue
+		var enabled IntValue = 1
 		s := e.Stack
+		if n.Flags&HasCondition != 0 {
+			enabled, s = pop[IntValue](s)
+		}
 		if n.Flags&HasChoiceOnlyContent != 0 {
 			var x StringValue
 			x, s = pop[StringValue](s)
@@ -105,7 +109,11 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			label = x + label
 		}
 		// TODO error if we can't find the target for this choice
-		choice := &Choice{string(label), el.Find(n.Dest)}
+		dest := el.Find(n.Dest)
+		var choice *Choice
+		if enabled != 0 {
+			choice = &Choice{string(label), dest}
+		}
 		return "", choice, el.Next(), BaseEvaluator{Stack: s}
 	case SetVar:
 		val, s := e.Stack.PopVal()

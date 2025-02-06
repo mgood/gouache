@@ -236,6 +236,7 @@ func readfile(t *testing.T, fn string) string {
 
 func TestSamples(t *testing.T) {
 	for _, name := range []string{
+		"choice-condition",
 		"if-else",
 		"math",
 		"global",
