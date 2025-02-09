@@ -13,8 +13,9 @@ type Outputter interface {
 }
 
 type Choice struct {
-	Label string
-	Dest  Element
+	Label              string
+	Dest               Element
+	IsInvisibleDefault bool
 }
 
 type Element interface {
@@ -84,6 +85,9 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 				return "", nil, el.Next(), e
 			}
 		}
+		if n.incTurnCount {
+			e.Stack = e.Stack.IncTurnCount()
+		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
@@ -108,11 +112,17 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			x, s = pop[StringValue](s)
 			label = x + label
 		}
-		// TODO error if we can't find the target for this choice
-		dest := el.Find(n.Dest)
+		// TODO error here if we can't find the target for this choice?
+		// dest := el.Find(n.Dest)
 		var choice *Choice
 		if enabled != 0 {
-			choice = &Choice{string(label), dest}
+			isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
+			dest := Divert{Dest: n.Dest, incTurnCount: !isInvisibleDefault}
+			choice = &Choice{
+				Label:              string(label),
+				Dest:               choiceElement{node: dest, src: el},
+				IsInvisibleDefault: isInvisibleDefault,
+			}
 		}
 		return "", choice, el.Next(), BaseEvaluator{Stack: s}
 	case SetVar:
@@ -126,6 +136,23 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
+}
+
+type choiceElement struct {
+	node Node
+	src  Element
+}
+
+func (e choiceElement) Node() Node {
+	return e.node
+}
+
+func (e choiceElement) Find(addr Address) Element {
+	return e.src.Find(addr)
+}
+
+func (e choiceElement) Next() Element {
+	panic("should have followed the Divert")
 }
 
 func pop[T any](s *CallFrame) (T, *CallFrame) {
@@ -204,6 +231,10 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
 		}
 		return "", nil, dest, e
+	case TurnCounter:
+		turn := IntValue(e.Stack.turnCount)
+		s := e.Stack.PushVal(turn)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Done, End:
 		return "", nil, nil, BaseEvaluator{Stack: e.Stack}
 	case Out:

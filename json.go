@@ -97,6 +97,8 @@ func loadNode(n any) Node {
 			return End{}
 		case "nop":
 			return NoOp{}
+		case "turn":
+			return TurnCounter{}
 		case "+":
 			return Add
 		case "-":
@@ -157,6 +159,11 @@ func loadNode(n any) Node {
 		if v, ok := n["VAR?"]; ok {
 			return GetVar{
 				Name: v.(string),
+			}
+		}
+		if v, ok := n["CNT?"]; ok {
+			return GetVisitCount{
+				Container: v.(string),
 			}
 		}
 		panic(fmt.Errorf("unsupported node: %#v", n))

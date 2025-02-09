@@ -40,12 +40,12 @@ func (f *EvalFrame) Pop() (Value, *EvalFrame) {
 }
 
 type CallFrame struct {
+	turnCount  int
 	globals    *Vars
 	locals     *Vars
 	evalStack  *EvalFrame
 	evalDepth  int
 	stringMode bool
-	prev       *CallFrame
 }
 
 func (f *CallFrame) PushVal(v Value) *CallFrame {
@@ -61,17 +61,13 @@ func (f *CallFrame) PopVal() (Value, *CallFrame) {
 	return v, f
 }
 
-func (f *CallFrame) PushCall() *CallFrame {
-	return &CallFrame{
-		globals:   f.globals,
-		locals:    nil,
-		evalStack: f.evalStack, // TODO bounds checking for stuff on the stack here?
-		prev:      f,
+func (f *CallFrame) IncTurnCount() *CallFrame {
+	if f == nil {
+		return &CallFrame{turnCount: 1}
 	}
-}
-
-func (f *CallFrame) PopCall() *CallFrame {
-	return f.prev
+	r := *f
+	r.turnCount++
+	return &r
 }
 
 func (f *CallFrame) WithLocal(name string, value Value) *CallFrame {

@@ -188,6 +188,7 @@ func TestSingleChoice(t *testing.T) {
 
 func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 	var choices []Choice
+	var defaultChoice *Choice
 	// TODO more general pattern for collecting output that allows access to stuff like tags
 	var output strings.Builder
 	var s Output
@@ -206,9 +207,18 @@ func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 			skipNewline = false
 		}
 		if choice != nil {
-			choices = append(choices, *choice)
+			if choice.IsInvisibleDefault {
+				defaultChoice = choice
+			} else {
+				choices = append(choices, *choice)
+			}
 		}
 		if elem != nil {
+			continue
+		}
+		if len(choices) == 0 && defaultChoice != nil {
+			elem = defaultChoice.Dest
+			defaultChoice = nil
 			continue
 		}
 		// TODO if we have a single default choice, we can follow that
@@ -244,6 +254,7 @@ func TestSamples(t *testing.T) {
 		"pop",
 		"stitch",
 		"sample",
+		"turn-count",
 	} {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"

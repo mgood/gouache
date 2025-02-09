@@ -7,9 +7,9 @@ const InkVersion = 21
 type ContainerFlag uint32
 
 const (
-	RecordVisits   ContainerFlag = 0x1 // Visits: The story should keep a record of the number of visits to this container.
-	CountTurns     ContainerFlag = 0x2 // Turns: The story should keep a record of the number of the turn index that this container was lasted visited.
-	CountStartOnly ContainerFlag = 0x4 // CountStartOnly: For the above numbers, the story should only record changes when the story visits the very first subelement, rather than random entry at any point. Used to distinguish the different behaviour between knots and stitches (random access), versus gather points and choices (count start only).
+	RecordVisits   ContainerFlag = 0x1 // The story should keep a record of the number of visits to this container.
+	CountTurns     ContainerFlag = 0x2 // The story should keep a record of the number of the turn index that this container was lasted visited.
+	CountStartOnly ContainerFlag = 0x4 // For the above numbers, the story should only record changes when the story visits the very first subelement, rather than random entry at any point. Used to distinguish the different behaviour between knots and stitches (random access), versus gather points and choices (count start only).
 )
 
 type Node interface{}
@@ -39,9 +39,10 @@ type ChoicePoint struct {
 	Flags ChoicePointFlag `json:"flg"`
 }
 type Divert struct {
-	Dest        Address `json:"->"`
-	Var         bool    `json:"var"`
-	Conditional bool    `json:"c"`
+	Dest         Address `json:"->"`
+	Var          bool    `json:"var"`
+	Conditional  bool    `json:"c"`
+	incTurnCount bool
 }
 
 type BeginEval struct{}       // "ev"
@@ -53,6 +54,7 @@ type EndTag struct{}          // "/#"
 type Out struct{}             // "out"
 type Pop struct{}             // "pop"
 type NoOp struct{}            // "pop"
+type TurnCounter struct{}     // "turn"
 
 type UnaryOp func(a Value) Value
 
@@ -140,6 +142,9 @@ type SetVar struct {
 }
 type GetVar struct {
 	Name string `json:"VAR?"`
+}
+type GetVisitCount struct {
+	Container string `json:"CNT?"`
 }
 
 type Value interface{}
