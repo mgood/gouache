@@ -255,6 +255,7 @@ func TestSamples(t *testing.T) {
 		"stitch",
 		"sample",
 		"turn-count",
+		"visit-count",
 	} {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"

@@ -1,6 +1,9 @@
 package gouache
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 const InkVersion = 21
 
@@ -17,6 +20,21 @@ type Node interface{}
 type Text string
 type Newline struct{} // "\n"
 type Address string
+
+func (a Address) Parent() Address {
+	i := strings.LastIndex(string(a), ".")
+	if i == -1 {
+		return ""
+	}
+	return Address(a[:i])
+}
+
+func (a Address) Contains(b Address) bool {
+	if a == b {
+		return true
+	}
+	return strings.HasPrefix(string(b), string(a)+".")
+}
 
 // Tries to close/pop the active thread, otherwise marks the story flow safe to exit without a loose end warning.
 type Done struct{}

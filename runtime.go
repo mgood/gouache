@@ -1,6 +1,9 @@
 package gouache
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Output string
 
@@ -20,6 +23,7 @@ type Choice struct {
 
 type Element interface {
 	Node() Node
+	Address() (Address, int)
 	Find(Address) Element
 	Next() Element
 }
@@ -49,11 +53,20 @@ func Init(root Element) Evaluator {
 	return eval
 }
 
+// elements should report their path
+// track number of elements visited in this parent
+// when parent changes, record the visits for the container
+// though follow the flags on the parent to determine when to update
+// RecordVisits
+// CountTurns
+// CountStartOnly
+
 type BaseEvaluator struct {
 	Stack *CallFrame
 }
 
 func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
+	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
 		return Output(n), nil, el.Next(), e
@@ -112,8 +125,14 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			x, s = pop[StringValue](s)
 			label = x + label
 		}
+		if n.Flags&OnceOnly != 0 {
+			addr, _ := el.Find(n.Dest).Address()
+			visits := e.Stack.VisitCount(addr)
+			if visits != 0 {
+				enabled = 0
+			}
+		}
 		// TODO error here if we can't find the target for this choice?
-		// dest := el.Find(n.Dest)
 		var choice *Choice
 		if enabled != 0 {
 			isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
@@ -147,6 +166,10 @@ func (e choiceElement) Node() Node {
 	return e.node
 }
 
+func (e choiceElement) Address() (Address, int) {
+	return e.src.Address()
+}
+
 func (e choiceElement) Find(addr Address) Element {
 	return e.src.Find(addr)
 }
@@ -177,6 +200,7 @@ func (e EvalEvaluator) endEval() Evaluator {
 }
 
 func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
+	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case BeginStringEval:
 		s := e.Stack.WithStringMode(true)
@@ -235,6 +259,12 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		turn := IntValue(e.Stack.turnCount)
 		s := e.Stack.PushVal(turn)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case GetVisitCount:
+		base, _ := el.Address()
+		addr := resolve(base, Address(n.Container))
+		count := IntValue(e.Stack.VisitCount(addr))
+		s := e.Stack.PushVal(count)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Done, End:
 		return "", nil, nil, BaseEvaluator{Stack: e.Stack}
 	case Out:
@@ -246,6 +276,17 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	}
 }
 
+func resolve(base, addr Address) Address {
+	after, ok := strings.CutPrefix(string(addr), ".^")
+	if !ok {
+		return addr
+	}
+	if after == "" {
+		return base
+	}
+	return resolve(base.Parent(), Address(after))
+}
+
 type StringEvaluator struct {
 	Stack   *CallFrame
 	wrapped Evaluator
@@ -253,6 +294,7 @@ type StringEvaluator struct {
 }
 
 func (e StringEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
+	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
 		return "", nil, el.Next(), e.pushText(string(n))

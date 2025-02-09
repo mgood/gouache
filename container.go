@@ -17,6 +17,10 @@ func (e ContainerElement) Find(name Address) Element {
 	return e.Self.Find(name)
 }
 
+func (e ContainerElement) Address() (Address, int) {
+	return e.Self.Address(), e.Index
+}
+
 func (e ContainerElement) Flatten() *ContainerElement {
 	if e.Index >= len(e.Self.Contents) {
 		if e.Self.ParentIndex == nil {
@@ -58,6 +62,25 @@ type Container struct {
 	Flags       ContainerFlag
 	Contents    []Node
 	Nested      map[string]Container
+}
+
+func (c Container) key() string {
+	switch {
+	case c.Name != "":
+		return c.Name
+	case c.ParentIndex != nil:
+		return fmt.Sprint(*c.ParentIndex)
+	default:
+		return ""
+	}
+}
+
+func (c Container) Address() Address {
+	key := c.key()
+	if c.Parent == nil || c.Parent.Parent == nil {
+		return Address(key)
+	}
+	return c.Parent.Address() + Address("."+key)
 }
 
 func (c *Container) Find(name Address) Element {

@@ -1,5 +1,38 @@
 package gouache
 
+type Visit struct {
+	Address    Address
+	EntryIndex int
+	EntryTurn  int
+	Prev       *Visit
+}
+
+func (v *Visit) Push(addr Address, index, turn int) *Visit {
+	if v != nil && v.Address == addr {
+		return v
+	}
+	return &Visit{
+		Address:    addr,
+		EntryIndex: index,
+		EntryTurn:  turn,
+		Prev:       v,
+	}
+}
+
+func (v *Visit) Count(addr Address) int {
+	var count int
+	entered := false
+	for ; v != nil; v = v.Prev {
+		if !addr.Contains(v.Address) {
+			entered = false
+		} else if !entered {
+			count++
+			entered = true
+		}
+	}
+	return count
+}
+
 type Vars struct {
 	name  string
 	value Value
@@ -40,12 +73,33 @@ func (f *EvalFrame) Pop() (Value, *EvalFrame) {
 }
 
 type CallFrame struct {
+	visits     *Visit
 	turnCount  int
 	globals    *Vars
 	locals     *Vars
 	evalStack  *EvalFrame
 	evalDepth  int
 	stringMode bool
+}
+
+func (f *CallFrame) Visit(addr Address, index int) *CallFrame {
+	if f == nil {
+		f = &CallFrame{}
+	}
+	visits := f.visits.Push(addr, index, f.turnCount)
+	if f.visits == visits {
+		return f
+	}
+	r := *f
+	r.visits = visits
+	return &r
+}
+
+func (f *CallFrame) VisitCount(addr Address) int {
+	if f == nil {
+		return 0
+	}
+	return f.visits.Count(addr)
 }
 
 func (f *CallFrame) PushVal(v Value) *CallFrame {
