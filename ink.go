@@ -79,11 +79,18 @@ type UnaryOp func(a Value) Value
 var Not UnaryOp = func(a Value) Value {
 	switch a := a.(type) {
 	case IntValue:
-		if a == 0 {
-			return IntValue(1)
-		} else {
-			return IntValue(0)
-		}
+		return boolean(a == 0)
+	default:
+		panic("unsupported type")
+	}
+}
+
+var Neg UnaryOp = func(a Value) Value {
+	switch a := a.(type) {
+	case IntValue:
+		return -a
+	case FloatValue:
+		return -a
 	default:
 		panic("unsupported type")
 	}
@@ -145,10 +152,62 @@ var Mod BinOp = func(a, b Value) Value {
 }
 
 var Eq BinOp = func(a, b Value) Value {
-	if a == b {
-		return IntValue(1)
+	return boolean(a == b)
+}
+
+var Ne BinOp = func(a, b Value) Value {
+	return boolean(a != b)
+}
+
+var And BinOp = func(a, b Value) Value {
+	return boolean(truthy(a) && truthy(b))
+}
+
+var Or BinOp = func(a, b Value) Value {
+	return boolean(truthy(a) || truthy(b))
+}
+
+var Lt BinOp = func(a, b Value) Value {
+	switch a := a.(type) {
+	case FloatValue:
+		return boolean(a < b.(FloatValue))
+	case IntValue:
+		return boolean(a < b.(IntValue))
+	default:
+		panic("unsupported type")
 	}
-	return IntValue(0)
+}
+
+var Gt BinOp = func(a, b Value) Value {
+	return Lt(b, a)
+}
+
+var Lte BinOp = func(a, b Value) Value {
+	return Or(
+		Lt(a, b),
+		Eq(a, b),
+	)
+}
+
+var Gte BinOp = func(a, b Value) Value {
+	return Or(
+		Gt(a, b),
+		Eq(a, b),
+	)
+}
+
+var Min BinOp = func(a, b Value) Value {
+	if truthy(Lt(b, a)) {
+		return b
+	}
+	return a
+}
+
+var Max BinOp = func(a, b Value) Value {
+	if truthy(Gt(b, a)) {
+		return b
+	}
+	return a
 }
 
 type SetTemp struct {
@@ -175,11 +234,38 @@ func (s StringValue) Output() Output {
 
 type FloatValue float64
 
+func (f FloatValue) Output() Output {
+	s := fmt.Sprint(f)
+	return Output(s)
+}
+
 type IntValue int64
 
 func (i IntValue) Output() Output {
 	s := fmt.Sprint(i)
 	return Output(s)
+}
+
+type BoolValue bool
+
+func (b BoolValue) Output() Output {
+	s := fmt.Sprint(b)
+	return Output(s)
+}
+
+func boolean(b bool) BoolValue {
+	return BoolValue(b)
+}
+
+func truthy(v Value) bool {
+	switch v := v.(type) {
+	case BoolValue:
+		return bool(v)
+	case IntValue:
+		return v != 0
+	default:
+		panic("unsupported type")
+	}
 }
 
 type DivertTargetValue struct {

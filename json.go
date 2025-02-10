@@ -71,6 +71,8 @@ func loadNode(n any) Node {
 			panic(err)
 		}
 		return IntValue(i)
+	case bool:
+		return boolean(n)
 	case string:
 		switch n {
 		case "done":
@@ -109,10 +111,30 @@ func loadNode(n any) Node {
 			return Mul
 		case "%":
 			return Mod
+		case "_":
+			return Neg
+		case "&&":
+			return And
+		case "||":
+			return Or
 		case "==":
 			return Eq
+		case "!=":
+			return Ne
+		case "<":
+			return Lt
+		case "<=":
+			return Lte
+		case ">":
+			return Gt
+		case ">=":
+			return Gte
 		case "!":
 			return Not
+		case "MIN":
+			return Min
+		case "MAX":
+			return Max
 		}
 		if s, found := strings.CutPrefix(n, "^"); found {
 			return Text(s)

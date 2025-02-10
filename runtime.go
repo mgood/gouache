@@ -92,9 +92,9 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			addr = addrVar.(DivertTargetValue).Dest
 		}
 		if n.Conditional {
-			var cond IntValue
-			cond, e.Stack = pop[IntValue](e.Stack)
-			if cond == 0 {
+			var cond Value
+			cond, e.Stack = e.Stack.PopVal()
+			if !truthy(cond) {
 				return "", nil, el.Next(), e
 			}
 		}
@@ -110,10 +110,12 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, el.Next(), TagEvaluator{Stack: e.Stack}
 	case ChoicePoint:
 		var label StringValue
-		var enabled IntValue = 1
+		enabled := true
 		s := e.Stack
 		if n.Flags&HasCondition != 0 {
-			enabled, s = pop[IntValue](s)
+			var cond Value
+			cond, s = s.PopVal()
+			enabled = truthy(cond)
 		}
 		if n.Flags&HasChoiceOnlyContent != 0 {
 			var x StringValue
@@ -129,12 +131,12 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			addr, _ := el.Find(n.Dest).Address()
 			visits := e.Stack.VisitCount(addr)
 			if visits != 0 {
-				enabled = 0
+				enabled = false
 			}
 		}
 		// TODO error here if we can't find the target for this choice?
 		var choice *Choice
-		if enabled != 0 {
+		if enabled {
 			isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
 			dest := Divert{Dest: n.Dest, incTurnCount: !isInvisibleDefault}
 			choice = &Choice{
@@ -222,7 +224,7 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		val, s := e.Stack.PopVal()
 		s = s.WithLocal(n.Name, val)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
-	case DivertTargetValue, IntValue:
+	case DivertTargetValue, IntValue, FloatValue, BoolValue:
 		s := e.Stack.PushVal(n)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case BinOp:
