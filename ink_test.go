@@ -266,6 +266,7 @@ func TestSamples(t *testing.T) {
 	for _, name := range []string{
 		"choice-condition",
 		"func-abs",
+		"func-text-content",
 		"global",
 		"if-else",
 		"math",

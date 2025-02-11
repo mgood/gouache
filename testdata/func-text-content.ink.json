@@ -1,0 +1,62 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "ev",
+      "str",
+      "^hello",
+      "/str",
+      {
+        "f()": "surround_foo_bar"
+      },
+      "out",
+      "/ev",
+      "^ baz",
+      "\n",
+      "ev",
+      {
+        "f()": "void_return"
+      },
+      "out",
+      "/ev",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "surround_foo_bar": [
+        {
+          "temp=": "x"
+        },
+        "^foo",
+        "\n",
+        "ev",
+        {
+          "VAR?": "x"
+        },
+        "out",
+        "/ev",
+        "\n",
+        "^bar",
+        "\n",
+        null
+      ],
+      "void_return": [
+        "^should have \"void\" return",
+        "\n",
+        "ev",
+        "void",
+        "/ev",
+        "~ret",
+        null
+      ]
+    }
+  ],
+  "listDefs": {}
+}

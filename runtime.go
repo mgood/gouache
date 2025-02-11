@@ -65,6 +65,15 @@ type BaseEvaluator struct {
 	Stack *CallFrame
 }
 
+func popIfEnded(s *CallFrame, next Element) (*CallFrame, Element) {
+	if next != nil {
+		return s, next
+	}
+	s, next = s.PopFrame()
+	s = s.PushVal(VoidValue{})
+	return s, next
+}
+
 func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
@@ -79,7 +88,11 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		if emit {
 			return Output("\n"), nil, el.Next(), BaseEvaluator{Stack: s}
 		}
-		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+		// XXX For now we're assuming that the function will end with a trailing
+		// newline. That seems to be the case for simple functions, but does this
+		// always hold?
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case BeginEval:
 		s := e.Stack.IncEvalDepth(1)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
@@ -296,11 +309,14 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case Out:
 		val, s := e.Stack.PopVal()
 		o := val.(Outputter).Output()
-		s, newline := e.Stack.ShouldPrependNewline()
+		s, newline := s.ShouldPrependNewline()
 		if newline {
 			o = "\n" + o
 		}
 		return o, nil, el.Next(), EvalEvaluator{Stack: s}
+	case Void:
+		s := e.Stack.PushVal(VoidValue{})
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}

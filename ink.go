@@ -78,6 +78,7 @@ type Pop struct{}             // "pop"
 type NoOp struct{}            // "pop"
 type TurnCounter struct{}     // "turn"
 type FuncReturn struct{}      // "~ret"
+type Void struct{}            // "void"
 
 type UnaryOp func(a Value) Value
 
@@ -235,6 +236,12 @@ type StringValue string // "^text"
 
 func (s StringValue) Output() Output {
 	return Output(s)
+}
+
+type VoidValue struct{}
+
+func (v VoidValue) Output() Output {
+	return Output("")
 }
 
 type FloatValue float64

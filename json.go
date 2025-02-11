@@ -99,6 +99,8 @@ func loadNode(n any) Node {
 			return End{}
 		case "nop":
 			return NoOp{}
+		case "void":
+			return Void{}
 		case "turn":
 			return TurnCounter{}
 		case "~ret":
