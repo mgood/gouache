@@ -197,6 +197,16 @@ func loadNode(n any) Node {
 				Dest: Address(v.(string)),
 			}
 		}
+		if v, ok := n["^var"]; ok {
+			ci, err := n["ci"].(json.Number).Int64()
+			if err != nil {
+				panic(err)
+			}
+			return VarRef{
+				Name:         v.(string),
+				ContentIndex: int(ci),
+			}
+		}
 		panic(fmt.Errorf("unsupported node: %#v", n))
 	case []any:
 		return LoadContainer(n)

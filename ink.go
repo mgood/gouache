@@ -223,11 +223,18 @@ type SetTemp struct {
 type SetVar struct {
 	Name string `json:"VAR="`
 }
+
 type GetVar struct {
 	Name string `json:"VAR?"`
 }
+
 type GetVisitCount struct {
 	Container string `json:"CNT?"`
+}
+
+type VarRef struct {
+	Name         string `json:"^var"`
+	ContentIndex int    `json:"ci"`
 }
 
 type Value interface{}

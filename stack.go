@@ -120,6 +120,7 @@ type CallFrame struct {
 	evalStack *EvalFrame
 
 	locals       *Vars
+	callDepth    int
 	evalDepth    int
 	stringMode   bool
 	newlineState newlineState
@@ -211,8 +212,39 @@ func (f *CallFrame) IncTurnCount() *CallFrame {
 	return &r
 }
 
+func (f *CallFrame) setRef(ref VarRef, v Value) *CallFrame {
+	if ref.ContentIndex == 0 {
+		return f.withGlobals(f.globals.With(ref.Name, v))
+	}
+	if ref.ContentIndex == f.callDepth+1 {
+		return f.withLocals(f.locals.With(ref.Name, v))
+	}
+	r := *f
+	r.prev = f.prev.setRef(ref, v)
+	return &r
+}
+
 func (f *CallFrame) WithLocal(name string, value Value) *CallFrame {
+	v, ok := f.locals.Get(name)
+	if ok {
+		if r, ok := v.(VarRef); ok {
+			return f.setRef(r, value)
+		}
+	}
 	return f.withLocals(f.locals.With(name, value))
+}
+
+func (f *CallFrame) PushVarRef(name string) *CallFrame {
+	if f == nil {
+		panic("uninitialized frame does not have any vars")
+	}
+	if _, isLocal := f.locals.Get(name); isLocal {
+		return f.PushVal(VarRef{Name: name, ContentIndex: f.callDepth + 1})
+	}
+	if _, isGlobal := f.globals.Get(name); isGlobal {
+		return f.PushVal(VarRef{Name: name, ContentIndex: 0})
+	}
+	panic(fmt.Errorf("variable %s not found", name))
 }
 
 func (f *CallFrame) PushFrame(returnTo Element) *CallFrame {
@@ -225,6 +257,7 @@ func (f *CallFrame) PushFrame(returnTo Element) *CallFrame {
 		visits:       f.visits,
 		turnCount:    f.turnCount,
 		globals:      f.globals,
+		callDepth:    f.callDepth + 1,
 		evalStack:    f.evalStack,
 		newlineState: newlineSkipFirst,
 	}
@@ -241,6 +274,7 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element) {
 		globals:   f.globals,
 		evalStack: f.evalStack,
 
+		callDepth:  p.callDepth,
 		locals:     p.locals,
 		evalDepth:  p.evalDepth,
 		stringMode: p.stringMode,
@@ -254,13 +288,35 @@ func (f *CallFrame) WithGlobal(name string, value Value) *CallFrame {
 	return f.withGlobals(f.globals.With(name, value))
 }
 
+func (f *CallFrame) getRef(r VarRef) Value {
+	if r.ContentIndex == 0 {
+		v, ok := f.globals.Get(r.Name)
+		if !ok {
+			panic(fmt.Errorf("global %s not found", r.Name))
+		}
+		return v
+	}
+	if r.ContentIndex == f.callDepth+1 {
+		v, ok := f.locals.Get(r.Name)
+		if !ok {
+			panic(fmt.Errorf("local %s not found", r.Name))
+		}
+		return v
+	}
+	return f.prev.getRef(r)
+}
+
 func (f *CallFrame) GetVar(name string) (Value, bool) {
 	if f == nil {
 		return nil, false
 	}
 	if f.locals != nil {
 		if v, ok := f.locals.Get(name); ok {
-			return v, true
+			r, ok := v.(VarRef)
+			if !ok {
+				return v, true
+			}
+			return f.getRef(r), true
 		}
 	}
 	if f.globals != nil {

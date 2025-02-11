@@ -82,15 +82,13 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		if newline {
 			n = "\n" + n
 		}
-		return Output(n), nil, el.Next(), BaseEvaluator{Stack: s}
+		s, next := popIfEnded(s, el.Next())
+		return Output(n), nil, next, endEval(s)
 	case Newline:
 		s, emit := e.Stack.ShouldEmitNewline()
 		if emit {
 			return Output("\n"), nil, el.Next(), BaseEvaluator{Stack: s}
 		}
-		// XXX For now we're assuming that the function will end with a trailing
-		// newline. That seems to be the case for simple functions, but does this
-		// always hold?
 		s, next := popIfEnded(s, el.Next())
 		return "", nil, next, endEval(s)
 	case BeginEval:
@@ -99,10 +97,12 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case SetTemp:
 		val, s := e.Stack.PopVal()
 		s = s.WithLocal(n.Name, val)
-		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case Pop:
 		_, s := e.Stack.PopVal()
-		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case Divert:
 		addr := n.Dest
 		if n.Var {
@@ -166,16 +166,19 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 				IsInvisibleDefault: isInvisibleDefault,
 			}
 		}
-		return "", choice, el.Next(), BaseEvaluator{Stack: s}
+		s, next := popIfEnded(s, el.Next())
+		return "", choice, next, endEval(s)
 	case SetVar:
 		val, s := e.Stack.PopVal()
 		s = s.WithGlobal(n.Name, val)
-		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case FuncReturn:
 		s, ret := e.Stack.PopFrame()
 		return "", nil, ret, endEval(s)
 	case NoOp:
-		return "", nil, el.Next(), e
+		s, next := popIfEnded(e.Stack, el.Next())
+		return "", nil, next, endEval(s)
 	case Done, End:
 		return "", nil, nil, e
 	default:
@@ -249,6 +252,8 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case SetTemp:
 		val, s := e.Stack.PopVal()
+		// TODO use "re" reassign flag to check that it's already
+		// been set?
 		s = s.WithLocal(n.Name, val)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case DivertTargetValue, IntValue, FloatValue, BoolValue:
@@ -262,6 +267,9 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case UnaryOp:
 		a, s := e.Stack.PopVal()
 		s = s.PushVal(n(a))
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case Pop:
+		_, s := e.Stack.PopVal()
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Divert:
 		addr := n.Dest
@@ -316,6 +324,9 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return o, nil, el.Next(), EvalEvaluator{Stack: s}
 	case Void:
 		s := e.Stack.PushVal(VoidValue{})
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case VarRef:
+		s := e.Stack.PushVarRef(n.Name)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))

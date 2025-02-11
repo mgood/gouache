@@ -1,0 +1,94 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "ev",
+      {
+        "^var": "global",
+        "ci": -1
+      },
+      10,
+      {
+        "f()": "alter"
+      },
+      "pop",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "global"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      2,
+      "/ev",
+      {
+        "temp=": "local"
+      },
+      "ev",
+      {
+        "^var": "local",
+        "ci": -1
+      },
+      20,
+      {
+        "f()": "alter"
+      },
+      "pop",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "local"
+      },
+      "out",
+      "/ev",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "alter": [
+        {
+          "temp=": "k"
+        },
+        {
+          "temp=": "x"
+        },
+        "ev",
+        {
+          "VAR?": "x"
+        },
+        {
+          "VAR?": "k"
+        },
+        "+",
+        "/ev",
+        {
+          "temp=": "x",
+          "re": true
+        },
+        null
+      ],
+      "global decl": [
+        "ev",
+        1,
+        {
+          "VAR=": "global"
+        },
+        "/ev",
+        "end",
+        null
+      ]
+    }
+  ],
+  "listDefs": {}
+}

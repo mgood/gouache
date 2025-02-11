@@ -275,6 +275,7 @@ func TestSamples(t *testing.T) {
 		"stitch",
 		"tempvar",
 		"turn-count",
+		"var-ref",
 		"visit-count",
 	} {
 		t.Run(name, func(t *testing.T) {
