@@ -101,6 +101,8 @@ func loadNode(n any) Node {
 			return NoOp{}
 		case "turn":
 			return TurnCounter{}
+		case "~ret":
+			return FuncReturn{}
 		case "+":
 			return Add
 		case "-":
@@ -186,6 +188,11 @@ func loadNode(n any) Node {
 		if v, ok := n["CNT?"]; ok {
 			return GetVisitCount{
 				Container: v.(string),
+			}
+		}
+		if v, ok := n["f()"]; ok {
+			return FuncCall{
+				Dest: Address(v.(string)),
 			}
 		}
 		panic(fmt.Errorf("unsupported node: %#v", n))

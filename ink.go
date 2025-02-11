@@ -63,6 +63,10 @@ type Divert struct {
 	incTurnCount bool
 }
 
+type FuncCall struct {
+	Dest Address `json:"f()"`
+}
+
 type BeginEval struct{}       // "ev"
 type EndEval struct{}         // "/ev"
 type BeginStringEval struct{} // "str"
@@ -73,6 +77,7 @@ type Out struct{}             // "out"
 type Pop struct{}             // "pop"
 type NoOp struct{}            // "pop"
 type TurnCounter struct{}     // "turn"
+type FuncReturn struct{}      // "~ret"
 
 type UnaryOp func(a Value) Value
 

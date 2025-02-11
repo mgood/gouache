@@ -19,7 +19,7 @@ func TestSimpleTextOutput(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, _, _ := Continue(Init(root), root)
+	output, _, _ := Continue(t, Init(root), root)
 	assert.Equal(t, "Once upon a time...\n", output)
 }
 
@@ -173,7 +173,7 @@ func TestSingleChoice(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, choices, eval := Continue(Init(root), root)
+	output, choices, eval := Continue(t, Init(root), root)
 	assert.Equal(t, "Once upon a time...\n", output)
 	choiceNames := make([]string, len(choices))
 	for i, choice := range choices {
@@ -181,12 +181,24 @@ func TestSingleChoice(t *testing.T) {
 	}
 	assert.Equal(t, []string{"choice"}, choiceNames)
 
-	output, choices, eval = Continue(eval, choices[0].Dest)
+	output, choices, eval = Continue(t, eval, choices[0].Dest)
 	assert.Equal(t, "The end.\n", output)
 	assert.Len(t, choices, 0)
 }
 
-func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
+func elementString(elem Element) string {
+	if elem == nil {
+		return "<nil>"
+	}
+	var b strings.Builder
+	fmt.Fprintf(&b, "{")
+	addr, i := elem.Address()
+	fmt.Fprintf(&b, "%q %d %#v", addr, i, elem.Node())
+	fmt.Fprintf(&b, "}")
+	return b.String()
+}
+
+func Continue(t testing.TB, eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 	var choices []Choice
 	var defaultChoice *Choice
 	// TODO more general pattern for collecting output that allows access to stuff like tags
@@ -194,7 +206,9 @@ func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 	var s Output
 	skipNewline := true
 	var choice *Choice
+	t.Logf("%T %s", eval, elementString(elem))
 	for ; ; s, choice, elem, eval = eval.Step(elem) {
+		t.Logf("%T %s", eval, elementString(elem))
 		switch s.String() {
 		case "":
 		case "\n":
@@ -221,7 +235,11 @@ func Continue(eval Evaluator, elem Element) (string, []Choice, Evaluator) {
 			defaultChoice = nil
 			continue
 		}
-		// TODO if we have a single default choice, we can follow that
+		if len(choices) == 1 && defaultChoice != nil {
+			elem = defaultChoice.Dest
+			defaultChoice = nil
+			continue
+		}
 		break
 	}
 	return output.String(), choices, eval
@@ -247,13 +265,14 @@ func readfile(t *testing.T, fn string) string {
 func TestSamples(t *testing.T) {
 	for _, name := range []string{
 		"choice-condition",
+		"func-abs",
+		"global",
 		"if-else",
 		"math",
-		"global",
-		"tempvar",
 		"pop",
-		"stitch",
 		"sample",
+		"stitch",
+		"tempvar",
 		"turn-count",
 		"visit-count",
 	} {
@@ -262,7 +281,7 @@ func TestSamples(t *testing.T) {
 			expected := readfile(t, base+".txt")
 			root := load(t, base+".json")
 			var b strings.Builder
-			output, choices, eval := Continue(Init(root), root)
+			output, choices, eval := Continue(t, Init(root), root)
 			b.WriteString(output)
 			for len(choices) > 0 {
 				b.WriteRune('\n')
@@ -270,7 +289,7 @@ func TestSamples(t *testing.T) {
 					fmt.Fprintf(&b, "%d: %s\n", i+1, choice.Label)
 				}
 				b.WriteString("?> ")
-				output, choices, eval = Continue(eval, choices[0].Dest)
+				output, choices, eval = Continue(t, eval, choices[0].Dest)
 				b.WriteString(output)
 			}
 			actual := b.String()

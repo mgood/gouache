@@ -69,9 +69,17 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
-		return Output(n), nil, el.Next(), e
+		s, newline := e.Stack.ShouldPrependNewline()
+		if newline {
+			n = "\n" + n
+		}
+		return Output(n), nil, el.Next(), BaseEvaluator{Stack: s}
 	case Newline:
-		return Output("\n"), nil, el.Next(), e
+		s, emit := e.Stack.ShouldEmitNewline()
+		if emit {
+			return Output("\n"), nil, el.Next(), BaseEvaluator{Stack: s}
+		}
+		return "", nil, el.Next(), BaseEvaluator{Stack: s}
 	case BeginEval:
 		s := e.Stack.IncEvalDepth(1)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
@@ -150,6 +158,9 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		val, s := e.Stack.PopVal()
 		s = s.WithGlobal(n.Name, val)
 		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+	case FuncReturn:
+		s, ret := e.Stack.PopFrame()
+		return "", nil, ret, endEval(s)
 	case NoOp:
 		return "", nil, el.Next(), e
 	case Done, End:
@@ -189,8 +200,7 @@ type EvalEvaluator struct {
 	Stack *CallFrame
 }
 
-func (e EvalEvaluator) endEval() Evaluator {
-	s := e.Stack.IncEvalDepth(-1)
+func endEval(s *CallFrame) Evaluator {
 	switch {
 	case s.stringMode:
 		return StringEvaluator{Stack: s}
@@ -199,6 +209,10 @@ func (e EvalEvaluator) endEval() Evaluator {
 	default:
 		return BaseEvaluator{Stack: s}
 	}
+}
+
+func (e EvalEvaluator) endEval() Evaluator {
+	return endEval(e.Stack.IncEvalDepth(-1))
 }
 
 func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
@@ -246,17 +260,27 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 			addr = addrVar.(DivertTargetValue).Dest
 		}
 		if n.Conditional {
-			var cond IntValue
-			cond, e.Stack = pop[IntValue](e.Stack)
-			if cond == 0 {
+			var cond Value
+			cond, e.Stack = e.Stack.PopVal()
+			if !truthy(cond) {
 				return "", nil, el.Next(), e
 			}
+		}
+		if n.incTurnCount {
+			e.Stack = e.Stack.IncTurnCount()
 		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
 		}
 		return "", nil, dest, e
+	case FuncCall:
+		s := e.Stack.PushFrame(el.Next())
+		dest := el.Find(n.Dest)
+		if dest == nil {
+			panic(fmt.Errorf("function call target %q not found", n.Dest))
+		}
+		return "", nil, dest, BaseEvaluator{Stack: s}
 	case TurnCounter:
 		turn := IntValue(e.Stack.turnCount)
 		s := e.Stack.PushVal(turn)
@@ -272,6 +296,10 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case Out:
 		val, s := e.Stack.PopVal()
 		o := val.(Outputter).Output()
+		s, newline := e.Stack.ShouldPrependNewline()
+		if newline {
+			o = "\n" + o
+		}
 		return o, nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))

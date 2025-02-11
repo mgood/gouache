@@ -1,5 +1,7 @@
 package gouache
 
+import "fmt"
+
 type Visit struct {
 	Address    Address
 	EntryIndex int
@@ -31,6 +33,36 @@ func (v *Visit) Count(addr Address) int {
 		}
 	}
 	return count
+}
+
+type VarsFrame struct {
+	vars *Vars
+	prev *VarsFrame
+}
+
+func (f *VarsFrame) With(name string, value Value) *VarsFrame {
+	if f == nil {
+		f = &VarsFrame{}
+	}
+	return &VarsFrame{
+		vars: f.vars.With(name, value),
+		prev: f.prev,
+	}
+}
+
+func (f *VarsFrame) Get(name string) (Value, bool) {
+	if f == nil {
+		return nil, false
+	}
+	return f.vars.Get(name)
+}
+
+func (f *VarsFrame) Push() *VarsFrame {
+	return &VarsFrame{prev: f}
+}
+
+func (f *VarsFrame) Pop() *VarsFrame {
+	return f.prev
 }
 
 type Vars struct {
@@ -72,14 +104,69 @@ func (f *EvalFrame) Pop() (Value, *EvalFrame) {
 	return f.value, f.prev
 }
 
+type newlineState int
+
+const (
+	newlineNormal newlineState = iota
+	newlineSkipFirst
+	newlinePending
+	newlineBuffered
+)
+
 type CallFrame struct {
-	visits     *Visit
-	turnCount  int
-	globals    *Vars
-	locals     *Vars
-	evalStack  *EvalFrame
-	evalDepth  int
-	stringMode bool
+	visits    *Visit
+	turnCount int
+	globals   *Vars
+	evalStack *EvalFrame
+
+	locals       *Vars
+	evalDepth    int
+	stringMode   bool
+	newlineState newlineState
+	prev         *CallFrame
+	returnTo     Element
+}
+
+func (f *CallFrame) ShouldEmitNewline() (*CallFrame, bool) {
+	if f == nil {
+		return nil, true
+	}
+	switch f.newlineState {
+	case newlineNormal:
+		return f, true
+	case newlineSkipFirst:
+		r := *f
+		r.newlineState = newlinePending
+		return &r, false
+	case newlinePending:
+		r := *f
+		r.newlineState = newlineBuffered
+		return &r, false
+	case newlineBuffered:
+		return f, false
+	default:
+		panic(fmt.Errorf("unhandled newline state %d", f.newlineState))
+	}
+}
+
+func (f *CallFrame) ShouldPrependNewline() (*CallFrame, bool) {
+	if f == nil {
+		return nil, false
+	}
+	switch f.newlineState {
+	case newlineNormal, newlinePending:
+		return f, false
+	case newlineSkipFirst:
+		r := *f
+		r.newlineState = newlinePending
+		return &r, false
+	case newlineBuffered:
+		r := *f
+		r.newlineState = newlinePending
+		return &r, true
+	default:
+		panic(fmt.Errorf("unhandled newline state %d", f.newlineState))
+	}
 }
 
 func (f *CallFrame) Visit(addr Address, index int) *CallFrame {
@@ -126,6 +213,39 @@ func (f *CallFrame) IncTurnCount() *CallFrame {
 
 func (f *CallFrame) WithLocal(name string, value Value) *CallFrame {
 	return f.withLocals(f.locals.With(name, value))
+}
+
+func (f *CallFrame) PushFrame(returnTo Element) *CallFrame {
+	if f == nil {
+		return &CallFrame{}
+	}
+	return &CallFrame{
+		prev:         f,
+		returnTo:     returnTo,
+		visits:       f.visits,
+		turnCount:    f.turnCount,
+		globals:      f.globals,
+		evalStack:    f.evalStack,
+		newlineState: newlineSkipFirst,
+	}
+}
+
+func (f *CallFrame) PopFrame() (*CallFrame, Element) {
+	p := f.prev
+	if p == nil {
+		p = &CallFrame{}
+	}
+	return &CallFrame{
+		visits:    f.visits,
+		turnCount: f.turnCount,
+		globals:   f.globals,
+		evalStack: f.evalStack,
+
+		locals:     p.locals,
+		evalDepth:  p.evalDepth,
+		stringMode: p.stringMode,
+		prev:       p.prev,
+	}, f.returnTo
 }
 
 func (f *CallFrame) WithGlobal(name string, value Value) *CallFrame {
