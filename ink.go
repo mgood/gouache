@@ -70,6 +70,10 @@ type FuncCall struct {
 	Dest Address `json:"f()"`
 }
 
+type TunnelCall struct {
+	Dest Address `json:"->t->"`
+}
+
 type BeginEval struct{}         // "ev"
 type EndEval struct{}           // "/ev"
 type BeginStringEval struct{}   // "str"
@@ -82,6 +86,7 @@ type DupTop struct{}            // "du"
 type NoOp struct{}              // "nop"
 type TurnCounter struct{}       // "turn"
 type FuncReturn struct{}        // "~ret"
+type TunnelReturn struct{}      // "->->"
 type Void struct{}              // "void"
 type ListInt struct{}           // "listInt"
 type ListValueFunc struct{}     // "LIST_VALUE"

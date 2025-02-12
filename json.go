@@ -108,6 +108,8 @@ func loadNode(n any) Node {
 			return TurnCounter{}
 		case "~ret":
 			return FuncReturn{}
+		case "->->":
+			return TunnelReturn{}
 		case "listInt":
 			return ListInt{}
 		case "LIST_VALUE":
@@ -223,6 +225,11 @@ func loadNode(n any) Node {
 		}
 		if v, ok := n["f()"]; ok {
 			return FuncCall{
+				Dest: Address(v.(string)),
+			}
+		}
+		if v, ok := n["->t->"]; ok {
+			return TunnelCall{
 				Dest: Address(v.(string)),
 			}
 		}

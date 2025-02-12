@@ -191,6 +191,27 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case FuncReturn:
 		s, ret := e.Stack.PopFrame()
 		return "", nil, ret, endEval(s)
+	case TunnelCall:
+		s := e.Stack.PushFrame(el.Next())
+		dest := el.Find(n.Dest)
+		if dest == nil {
+			panic(fmt.Errorf("tunnel call target %q not found", n.Dest))
+		}
+		return "", nil, dest, BaseEvaluator{Stack: s}
+	case TunnelReturn:
+		rv, s := e.Stack.PopVal()
+		s, ret := s.PopFrame()
+		if ret == nil {
+			panic(fmt.Errorf("Found tunnel onwards ->-> but no tunnel to return to"))
+		}
+		switch rv := rv.(type) {
+		case VoidValue:
+			return "", nil, ret, endEval(s)
+		case DivertTargetValue:
+			return "", nil, el.Find(rv.Dest), endEval(s)
+		default:
+			panic(fmt.Errorf("unexpected tunnel return value %T", rv))
+		}
 	case NoOp:
 		s, next := popIfEnded(e.Stack, el.Next())
 		return "", nil, next, endEval(s)
