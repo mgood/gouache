@@ -192,12 +192,15 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		s, ret := e.Stack.PopFrame()
 		return "", nil, ret, endEval(s)
 	case TunnelCall:
-		s := e.Stack.PushFrame(el.Next())
+		s := e.Stack.PushFrame(el.Next(), false)
 		dest := el.Find(n.Dest)
 		if dest == nil {
 			panic(fmt.Errorf("tunnel call target %q not found", n.Dest))
 		}
 		return "", nil, dest, BaseEvaluator{Stack: s}
+	case ThreadStart:
+		s := e.Stack.PushFrame(el.Next().Next(), false)
+		return "", nil, el.Next(), BaseEvaluator{Stack: s}
 	case TunnelReturn:
 		rv, s := e.Stack.PopVal()
 		s, ret := s.PopFrame()
@@ -337,7 +340,7 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		}
 		return "", nil, dest, e
 	case FuncCall:
-		s := e.Stack.PushFrame(el.Next())
+		s := e.Stack.PushFrame(el.Next(), true)
 		dest := el.Find(n.Dest)
 		if dest == nil {
 			panic(fmt.Errorf("function call target %q not found", n.Dest))

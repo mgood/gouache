@@ -332,21 +332,24 @@ func (f *CallFrame) PushVarRef(name string) *CallFrame {
 	panic(fmt.Errorf("variable %s not found", name))
 }
 
-func (f *CallFrame) PushFrame(returnTo Element) *CallFrame {
+func (f *CallFrame) PushFrame(returnTo Element, isFunction bool) *CallFrame {
 	if f == nil {
 		return &CallFrame{}
 	}
-	return &CallFrame{
-		prev:         f,
-		returnTo:     returnTo,
-		visits:       f.visits,
-		turnCount:    f.turnCount,
-		globals:      f.globals,
-		callDepth:    f.callDepth + 1,
-		evalStack:    f.evalStack,
-		newlineState: newlineSkipFirst,
-		listDefs:     f.listDefs,
+	r := &CallFrame{
+		prev:      f,
+		returnTo:  returnTo,
+		visits:    f.visits,
+		turnCount: f.turnCount,
+		globals:   f.globals,
+		callDepth: f.callDepth + 1,
+		evalStack: f.evalStack,
+		listDefs:  f.listDefs,
 	}
+	if isFunction {
+		r.newlineState = newlineSkipFirst
+	}
+	return r
 }
 
 func (f *CallFrame) PopFrame() (*CallFrame, Element) {

@@ -275,6 +275,7 @@ func TestSamples(t *testing.T) {
 		"sample",
 		"stitch",
 		"tempvar",
+		"threads",
 		"tunnels",
 		"turn-count",
 		"var-ref",

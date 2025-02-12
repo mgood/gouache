@@ -110,6 +110,8 @@ func loadNode(n any) Node {
 			return FuncReturn{}
 		case "->->":
 			return TunnelReturn{}
+		case "thread":
+			return ThreadStart{}
 		case "listInt":
 			return ListInt{}
 		case "LIST_VALUE":
