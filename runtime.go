@@ -388,6 +388,11 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		v := s.ListAll(val)
 		s = s.PushVal(v)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListInvertFunc:
+		val, s := pop[ListValue](e.Stack)
+		v := s.ListAll(val)
+		s = s.PushVal(v.Sub(val))
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case ListRangeFunc:
 		end, s := pop[IntValue](e.Stack)
 		start, s := pop[IntValue](s)

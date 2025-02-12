@@ -1113,6 +1113,35 @@
       "out",
       "/ev",
       "\n",
+      "ev",
+      {
+        "list": {
+          "fruitBowl.bananas": 2
+        }
+      },
+      "LIST_INVERT",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {},
+        "origins": [
+          "fruitBowl"
+        ]
+      },
+      "LIST_INVERT",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {}
+      },
+      "LIST_INVERT",
+      "out",
+      "/ev",
+      "\n",
       [
         "done",
         {

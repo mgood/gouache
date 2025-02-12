@@ -89,6 +89,7 @@ type ListCountFunc struct{}   // "LIST_COUNT"
 type ListMinFunc struct{}     // "LIST_MIN"
 type ListMaxFunc struct{}     // "LIST_MAX"
 type ListAllFunc struct{}     // "LIST_ALL"
+type ListInvertFunc struct{}  // "LIST_INVERT"
 type ListRangeFunc struct{}   // "range"
 
 type UnaryOp func(a Value) Value

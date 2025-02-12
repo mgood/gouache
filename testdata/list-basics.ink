@@ -128,6 +128,10 @@ empty gte empty {() >= ()}
 empty gte something {() >= (loud, deafening)}
 something gte empty {(off, quiet) >= ()}
 
+{LIST_INVERT((bananas))}
+{LIST_INVERT(fruitBowl())}
+{LIST_INVERT(())}
+
 === function listWithCommas(list, if_empty)
     {LIST_COUNT(list):
     - 2:
