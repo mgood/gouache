@@ -3,6 +3,7 @@ package gouache
 import (
 	"cmp"
 	"fmt"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -87,6 +88,7 @@ type ListValueFunc struct{}   // "LIST_VALUE"
 type ListCountFunc struct{}   // "LIST_COUNT"
 type ListMinFunc struct{}     // "LIST_MIN"
 type ListMaxFunc struct{}     // "LIST_MAX"
+type ListAllFunc struct{}     // "LIST_ALL"
 
 type UnaryOp func(a Value) Value
 
@@ -296,13 +298,13 @@ func (b BoolValue) Output() Output {
 }
 
 type ListValue struct {
-	Items   []ListItem `json:"list"`
-	Origins []string   `json:"origins"`
+	Items   []ListItem          `json:"list"`
+	Origins map[string]struct{} `json:"origins"`
 }
 
 func ListEmpty(origin string) ListValue {
 	return ListValue{
-		Origins: []string{origin},
+		Origins: map[string]struct{}{origin: {}},
 	}
 }
 
@@ -311,6 +313,7 @@ func ListSingle(origin, name string, value int) ListValue {
 		Items: []ListItem{
 			{Origin: origin, Name: name, Value: value},
 		},
+		Origins: map[string]struct{}{origin: {}},
 	}
 }
 
@@ -318,6 +321,9 @@ func (l ListValue) At(index int) ListValue {
 	return ListValue{
 		Items: []ListItem{
 			l.Items[index],
+		},
+		Origins: map[string]struct{}{
+			l.Items[index].Origin: {},
 		},
 	}
 }
@@ -347,27 +353,32 @@ func (l ListValue) Eq(v Value) bool {
 }
 
 func (l ListValue) Resolve(defs ListDefs) ListValue {
-	var items []ListItem
+	r := ListValue{
+		Origins: make(map[string]struct{}),
+	}
 	for _, item := range l.Items {
 		if item.Name != "" {
-			items = append(items, item)
+			r.Items = append(r.Items, item)
+			r.Origins[item.Origin] = struct{}{}
 			continue
 		}
 		if o, ok := defs[item.Origin]; ok {
 			for name, value := range o {
 				if value == item.Value {
-					items = append(items, ListItem{
+					r.Items = append(r.Items, ListItem{
 						Origin: item.Origin,
 						Name:   name,
 						Value:  value,
 					})
+					r.Origins[item.Origin] = struct{}{}
 				}
 			}
 		}
 	}
-	return ListValue{
-		Items: items,
+	if len(r.Items) == 0 {
+		r.Origins = l.Origins
 	}
+	return r
 }
 
 func (l ListValue) Put(origin, name string, value int) ListValue {
@@ -410,15 +421,19 @@ func (l ListValue) inc(v int) ListValue {
 }
 
 func (l ListValue) diff(m ListValue) ListValue {
-	var items []ListItem
+	r := ListValue{
+		Origins: make(map[string]struct{}),
+	}
 	for _, item := range l.Items {
 		if !m.contains(item) {
-			items = append(items, item)
+			r.Items = append(r.Items, item)
+			r.Origins[item.Origin] = struct{}{}
 		}
 	}
-	return ListValue{
-		Items: items,
+	if len(r.Items) == 0 {
+		r.Origins = l.Origins
 	}
+	return r
 }
 
 func (l ListValue) merge(m ListValue) ListValue {
@@ -432,9 +447,13 @@ func (l ListValue) merge(m ListValue) ListValue {
 		return cmp.Compare(a.Origin, b.Origin)
 	})
 	items = slices.Compact(items)
-	return ListValue{
-		Items: items,
+	r := ListValue{
+		Items:   items,
+		Origins: make(map[string]struct{}),
 	}
+	maps.Copy(r.Origins, l.Origins)
+	maps.Copy(r.Origins, m.Origins)
+	return r
 }
 
 func (l ListValue) Output() Output {

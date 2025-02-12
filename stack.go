@@ -135,6 +135,18 @@ func (li ListItem) Output() Output {
 
 type ListDefs map[string]map[string]int
 
+func (l ListDefs) All(origin string) ListValue {
+	o, ok := l[origin]
+	r := ListEmpty(origin)
+	if !ok {
+		return r
+	}
+	for name, v := range o {
+		r = r.Add(ListSingle(origin, name, v))
+	}
+	return r
+}
+
 func (l ListDefs) Value(origin string, value int) ListValue {
 	o, ok := l[origin]
 	if ok {
@@ -249,6 +261,17 @@ func (f *CallFrame) ListInt(origin string, value int) ListValue {
 	return f.listDefs.Value(origin, value)
 }
 
+func (f *CallFrame) ListAll(v ListValue) ListValue {
+	if len(v.Origins) == 0 {
+		return v
+	}
+	var r ListValue
+	for origin := range v.Origins {
+		r = r.Add(f.listDefs.All(origin))
+	}
+	return r
+}
+
 func (f *CallFrame) PushVal(v Value) *CallFrame {
 	if li, ok := v.(ListValue); ok {
 		v = li.Resolve(f.listDefs)
@@ -322,6 +345,7 @@ func (f *CallFrame) PushFrame(returnTo Element) *CallFrame {
 		callDepth:    f.callDepth + 1,
 		evalStack:    f.evalStack,
 		newlineState: newlineSkipFirst,
+		listDefs:     f.listDefs,
 	}
 }
 
@@ -335,12 +359,14 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element) {
 		turnCount: f.turnCount,
 		globals:   f.globals,
 		evalStack: f.evalStack,
+		listDefs:  f.listDefs,
 
 		callDepth:  p.callDepth,
 		locals:     p.locals,
 		evalDepth:  p.evalDepth,
 		stringMode: p.stringMode,
 		prev:       p.prev,
+		returnTo:   p.returnTo,
 	}, f.returnTo
 }
 

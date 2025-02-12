@@ -55,6 +55,14 @@
       "out",
       "/ev",
       "\n",
+      "ev",
+      {
+        "VAR?": "volumeLevel"
+      },
+      "LIST_ALL",
+      "out",
+      "/ev",
+      "\n",
       "^Adding items",
       "\n",
       "ev",
@@ -277,7 +285,7 @@
           "b": [
             "^has values",
             {
-              "->": "0.173"
+              "->": "0.179"
             },
             null
           ]
@@ -291,7 +299,7 @@
           "b": [
             "^is empty",
             {
-              "->": "0.173"
+              "->": "0.179"
             },
             null
           ]
@@ -313,7 +321,7 @@
           "b": [
             "^has values",
             {
-              "->": "0.180"
+              "->": "0.186"
             },
             null
           ]
@@ -327,7 +335,7 @@
           "b": [
             "^is empty",
             {
-              "->": "0.180"
+              "->": "0.186"
             },
             null
           ]
@@ -369,7 +377,7 @@
             "^? has apples and oranges",
             "\n",
             {
-              "->": "0.192"
+              "->": "0.198"
             },
             null
           ]
@@ -397,7 +405,7 @@
             "^has apples",
             "\n",
             {
-              "->": "0.200"
+              "->": "0.206"
             },
             null
           ]
@@ -428,7 +436,7 @@
             "^fruit has apples and bananas",
             "\n",
             {
-              "->": "0.208"
+              "->": "0.214"
             },
             null
           ]
@@ -481,7 +489,7 @@
             "^hasnt apples and bananas",
             "\n",
             {
-              "->": "0.230"
+              "->": "0.236"
             },
             null
           ]
@@ -509,7 +517,7 @@
             "^hasnt apples and bananas",
             "\n",
             {
-              "->": "0.238"
+              "->": "0.244"
             },
             null
           ]
@@ -538,6 +546,105 @@
       {
         "f()": "listWithCommas"
       },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "fruitBowl.apples": 1
+        }
+      },
+      "LIST_ALL",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "fruitBowl.apples": 1
+        }
+      },
+      "/ev",
+      {
+        "temp=": "r"
+      },
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      "LIST_ALL",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      {
+        "VAR?": "off"
+      },
+      "-",
+      {
+        "VAR=": "r",
+        "re": true
+      },
+      "/ev",
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      "LIST_ALL",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      {
+        "VAR?": "apples"
+      },
+      "-",
+      {
+        "VAR=": "r",
+        "re": true
+      },
+      "/ev",
+      "^r =",
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "^r all ",
+      "ev",
+      {
+        "VAR?": "r"
+      },
+      "LIST_ALL",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "fruitBowl.apples": 1
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "fruitBowl.apples": 1
+        }
+      },
+      "-",
+      "LIST_ALL",
       "out",
       "/ev",
       "\n",

@@ -118,6 +118,8 @@ func loadNode(n any) Node {
 			return ListMinFunc{}
 		case "LIST_MAX":
 			return ListMaxFunc{}
+		case "LIST_ALL":
+			return ListAllFunc{}
 		case "+":
 			return Add
 		case "-":
@@ -229,7 +231,9 @@ func loadNode(n any) Node {
 			}
 		}
 		if v, ok := n["list"]; ok {
-			list := ListValue{}
+			list := ListValue{
+				Origins: make(map[string]struct{}),
+			}
 			for k, vv := range v.(map[string]any) {
 				i, err := vv.(json.Number).Int64()
 				if err != nil {
@@ -243,7 +247,7 @@ func loadNode(n any) Node {
 			}
 			if origins := n["origins"]; origins != nil {
 				for _, origin := range origins.([]any) {
-					list.Origins = append(list.Origins, origin.(string))
+					list.Origins[origin.(string)] = struct{}{}
 				}
 			}
 			return list

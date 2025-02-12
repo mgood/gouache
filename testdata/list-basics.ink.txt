@@ -2,6 +2,7 @@ loud
 false
 false
 true
+off, quiet, medium, loud, deafening
 Adding items
 off, quiet, medium, loud
 Adding 1 will increment all items
@@ -35,3 +36,9 @@ false
 hasnt apples and bananas
 true
 apples, bananas, and oranges
+apples, off, bananas, quiet, oranges, medium, loud, deafening
+apples, off, bananas, quiet, oranges, medium, loud, deafening
+apples, bananas, oranges
+r =
+r all apples, bananas, oranges
+apples, off, bananas, quiet, oranges, medium, loud, deafening

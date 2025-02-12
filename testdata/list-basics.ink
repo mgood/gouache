@@ -14,6 +14,8 @@ LIST volumeLevel = off, quiet, medium, loud, deafening
 {(off, loud) == (medium)}
 {x != off}
 
+{LIST_ALL(volumeLevel)}
+
 Adding items
 ~ x += quiet
 ~ x += (off, medium)
@@ -78,6 +80,17 @@ LIST fruitBowl = (apples), (bananas), (oranges)
 {() hasnt ()}
 
 {listWithCommas(fruitBowl, "empty")}
+
+{LIST_ALL((off, apples))}
+
+~ temp r = (off, apples)
+{LIST_ALL(r)}
+~ r -= off
+{LIST_ALL(r)}
+~ r -= apples
+r ={r}
+r all {LIST_ALL(r)}
+{LIST_ALL((off, apples) - (off, apples))}
 
 === function listWithCommas(list, if_empty)
     {LIST_COUNT(list):

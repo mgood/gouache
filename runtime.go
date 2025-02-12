@@ -90,11 +90,12 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return Output(n), nil, next, endEval(s)
 	case Newline:
 		s, emit := e.Stack.ShouldEmitNewline()
+		var o Output
 		if emit {
-			return Output("\n"), nil, el.Next(), BaseEvaluator{Stack: s}
+			o = Output("\n")
 		}
 		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		return o, nil, next, endEval(s)
 	case BeginEval:
 		s := e.Stack.IncEvalDepth(1)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
@@ -381,6 +382,11 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		} else {
 			s = s.PushVal(val.At(len(val.Items) - 1))
 		}
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListAllFunc:
+		val, s := pop[ListValue](e.Stack)
+		v := s.ListAll(val)
+		s = s.PushVal(v)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
