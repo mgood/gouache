@@ -96,6 +96,38 @@ r all {LIST_ALL(r)}
 {LIST_RANGE(LIST_ALL(volumeLevel), 2, 3)}
 {LIST_RANGE((off, medium, loud), 2, 3)}
 
+{(off, quiet) < (loud, deafening)}
+{(loud, deafening) < (off, quiet)}
+{(off, quiet, loud) < (loud, deafening)}
+empty lt empty {() < ()}
+empty lt something {() < (loud, deafening)}
+something lt empty {(off, quiet) < ()}
+
+{(off, quiet) > (loud, deafening)}
+{(loud, deafening) > (off, quiet)}
+{(off, quiet, loud) > (loud, deafening)}
+empty gt empty {() > ()}
+empty gt something {() > (loud, deafening)}
+something gt empty {(off, quiet) > ()}
+
+{(off, quiet) <= (loud, deafening)}
+{(off, deafening) <= (loud)}
+{(loud) <= (off, deafening)}
+{(loud, deafening) <= (off, quiet)}
+{(off, quiet, loud) <= (loud, deafening)}
+empty lte empty {() <= ()}
+empty lte something {() <= (loud, deafening)}
+something lte empty {(off, quiet) <= ()}
+
+{(off, quiet) >= (loud, deafening)}
+{(off, deafening) >= (loud)}
+{(loud) >= (off, deafening)}
+{(loud, deafening) >= (off, quiet)}
+{(off, quiet, loud) >= (loud, deafening)}
+empty gte empty {() >= ()}
+empty gte something {() >= (loud, deafening)}
+something gte empty {(off, quiet) >= ()}
+
 === function listWithCommas(list, if_empty)
     {LIST_COUNT(list):
     - 2:

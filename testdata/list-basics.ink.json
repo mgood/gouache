@@ -673,6 +673,446 @@
       "out",
       "/ev",
       "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2,
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "^empty lt empty ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "^empty lt something ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "^something lt empty ",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {}
+      },
+      "<",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2,
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "^empty gt empty ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "^empty gt something ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "^something gt empty ",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {}
+      },
+      ">",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2,
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "^empty lte empty ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "^empty lte something ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "^something lte empty ",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {}
+      },
+      "<=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2,
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "^empty gte empty ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "^empty gte something ",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {
+          "volumeLevel.loud": 4,
+          "volumeLevel.deafening": 5
+        }
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
+      "^something gte empty ",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      {
+        "list": {}
+      },
+      ">=",
+      "out",
+      "/ev",
+      "\n",
       [
         "done",
         {

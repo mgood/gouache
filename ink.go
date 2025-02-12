@@ -199,6 +199,11 @@ var Or BinOp = func(a, b Value) Value {
 }
 
 var Lt BinOp = func(a, b Value) Value {
+	if a, ok := a.(interface {
+		Lt(b Value) bool
+	}); ok {
+		return boolean(a.Lt(b))
+	}
 	switch a := a.(type) {
 	case FloatValue:
 		return boolean(a < b.(FloatValue))
@@ -210,10 +215,20 @@ var Lt BinOp = func(a, b Value) Value {
 }
 
 var Gt BinOp = func(a, b Value) Value {
+	if a, ok := a.(interface {
+		Gt(b Value) bool
+	}); ok {
+		return boolean(a.Gt(b))
+	}
 	return Lt(b, a)
 }
 
 var Lte BinOp = func(a, b Value) Value {
+	if a, ok := a.(interface {
+		Lte(b Value) bool
+	}); ok {
+		return boolean(a.Lte(b))
+	}
 	return Or(
 		Lt(a, b),
 		Eq(a, b),
@@ -221,10 +236,12 @@ var Lte BinOp = func(a, b Value) Value {
 }
 
 var Gte BinOp = func(a, b Value) Value {
-	return Or(
-		Gt(a, b),
-		Eq(a, b),
-	)
+	if a, ok := a.(interface {
+		Gte(b Value) bool
+	}); ok {
+		return boolean(a.Gte(b))
+	}
+	return Lte(b, a)
 }
 
 var Min BinOp = func(a, b Value) Value {
@@ -316,6 +333,31 @@ func ListSingle(origin, name string, value int) ListValue {
 		},
 		Origins: map[string]struct{}{origin: {}},
 	}
+}
+
+func (l ListValue) Lt(v Value) bool {
+	m := v.(ListValue)
+	if len(l.Items) == 0 {
+		return len(m.Items) > 0
+	}
+	if len(m.Items) == 0 {
+		return false
+	}
+	return l.Items[len(l.Items)-1].Value < m.Items[0].Value
+}
+
+func (l ListValue) Lte(v Value) bool {
+	m := v.(ListValue)
+	if len(l.Items) == 0 {
+		return len(m.Items) > 0
+	}
+	if len(m.Items) == 0 {
+		return false
+	}
+	if l.Items[0].Value > m.Items[0].Value {
+		return false
+	}
+	return l.Items[len(l.Items)-1].Value <= m.Items[len(m.Items)-1].Value
 }
 
 func (l ListValue) At(index int) ListValue {

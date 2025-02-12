@@ -44,3 +44,31 @@ r all apples, bananas, oranges
 apples, off, bananas, quiet, oranges, medium, loud, deafening
 quiet, medium
 medium
+true
+false
+false
+empty lt empty false
+empty lt something true
+something lt empty false
+false
+true
+false
+empty gt empty false
+empty gt something false
+something gt empty true
+true
+false
+false
+false
+true
+empty lte empty false
+empty lte something true
+something lte empty false
+false
+false
+false
+true
+false
+empty gte empty false
+empty gte something false
+something gte empty true
