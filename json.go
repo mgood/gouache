@@ -9,20 +9,21 @@ import (
 
 var ErrUnsupportedVersion = fmt.Errorf("unsupported version")
 
-func LoadJSON(r io.Reader) (Element, error) {
+func LoadJSON(r io.Reader) (Element, ListDefs, error) {
 	var b struct {
-		Version int   `json:"inkVersion"`
-		Root    []any `json:"root"`
+		Version  int      `json:"inkVersion"`
+		Root     []any    `json:"root"`
+		ListDefs ListDefs `json:"listDefs"`
 	}
 	dec := json.NewDecoder(r)
 	dec.UseNumber()
 	if err := dec.Decode(&b); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if b.Version != InkVersion {
-		return nil, ErrUnsupportedVersion
+		return nil, nil, ErrUnsupportedVersion
 	}
-	return LoadContainer(b.Root).First(), nil
+	return LoadContainer(b.Root).First(), b.ListDefs, nil
 }
 
 func LoadContainer(contents []any) Container {
@@ -95,6 +96,8 @@ func loadNode(n any) Node {
 			return Out{}
 		case "pop":
 			return Pop{}
+		case "du":
+			return DupTop{}
 		case "end":
 			return End{}
 		case "nop":
@@ -105,6 +108,16 @@ func loadNode(n any) Node {
 			return TurnCounter{}
 		case "~ret":
 			return FuncReturn{}
+		case "listInt":
+			return ListInt{}
+		case "LIST_VALUE":
+			return ListValueFunc{}
+		case "LIST_COUNT":
+			return ListCountFunc{}
+		case "LIST_MIN":
+			return ListMinFunc{}
+		case "LIST_MAX":
+			return ListMaxFunc{}
 		case "+":
 			return Add
 		case "-":
@@ -135,6 +148,10 @@ func loadNode(n any) Node {
 			return Gte
 		case "!":
 			return Not
+		case "?":
+			return Has
+		case "!?":
+			return Hasnt
 		case "MIN":
 			return Min
 		case "MAX":
@@ -178,9 +195,13 @@ func loadNode(n any) Node {
 			}
 		}
 		if v, ok := n["VAR="]; ok {
-			return SetVar{
+			r := SetVar{
 				Name: v.(string),
 			}
+			if v, ok := n["re"]; ok {
+				r.Reassign = v.(bool)
+			}
+			return r
 		}
 		if v, ok := n["VAR?"]; ok {
 			return GetVar{
@@ -206,6 +227,26 @@ func loadNode(n any) Node {
 				Name:         v.(string),
 				ContentIndex: int(ci),
 			}
+		}
+		if v, ok := n["list"]; ok {
+			list := ListValue{}
+			for k, vv := range v.(map[string]any) {
+				i, err := vv.(json.Number).Int64()
+				if err != nil {
+					panic(err)
+				}
+				origin, name, ok := strings.Cut(k, ".")
+				if !ok {
+					panic(fmt.Errorf("unsupported list item: %q", k))
+				}
+				list = list.Put(origin, name, int(i))
+			}
+			if origins := n["origins"]; origins != nil {
+				for _, origin := range origins.([]any) {
+					list.Origins = append(list.Origins, origin.(string))
+				}
+			}
+			return list
 		}
 		panic(fmt.Errorf("unsupported node: %#v", n))
 	case []any:

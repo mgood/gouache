@@ -1,0 +1,756 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "ev",
+      {
+        "VAR?": "loud"
+      },
+      "/ev",
+      {
+        "temp=": "x"
+      },
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      {
+        "VAR?": "medium"
+      },
+      "==",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.loud": 4
+        }
+      },
+      {
+        "list": {
+          "volumeLevel.medium": 3
+        }
+      },
+      "==",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      {
+        "VAR?": "off"
+      },
+      "!=",
+      "out",
+      "/ev",
+      "\n",
+      "^Adding items",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      {
+        "VAR?": "quiet"
+      },
+      "+",
+      {
+        "VAR=": "x",
+        "re": true
+      },
+      "/ev",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.medium": 3
+        }
+      },
+      "+",
+      {
+        "VAR=": "x",
+        "re": true
+      },
+      "/ev",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "^Adding 1 will increment all items",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      1,
+      "+",
+      "out",
+      "/ev",
+      "\n",
+      "^Adding 2 will push \"loud\" to be undefined, and drop",
+      "\n",
+      "^it from the list",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      2,
+      "+",
+      "out",
+      "/ev",
+      "\n",
+      "^Subtracting",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      1,
+      "-",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.quiet": 2
+        }
+      },
+      "-",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "x"
+      },
+      "LIST_COUNT",
+      "out",
+      "/ev",
+      "\n",
+      "^a single value still counts as a 1-item list",
+      "\n",
+      "ev",
+      {
+        "VAR?": "quiet"
+      },
+      "LIST_COUNT",
+      "out",
+      "/ev",
+      "\n",
+      "^Look up a list item based on numeric value",
+      "\n",
+      "ev",
+      "^volumeLevel",
+      2,
+      "listInt",
+      "out",
+      "/ev",
+      "\n",
+      "^empty ",
+      "ev",
+      {
+        "list": {}
+      },
+      "LIST_VALUE",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "deafening"
+      },
+      "LIST_VALUE",
+      "out",
+      "/ev",
+      "\n",
+      "^multiple items takes largest value",
+      "\n",
+      "ev",
+      {
+        "VAR?": "off"
+      },
+      {
+        "VAR?": "quiet"
+      },
+      "+",
+      "LIST_VALUE",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruitBowl"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruitBowl"
+      },
+      "LIST_MIN",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruitBowl"
+      },
+      "LIST_MAX",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.oranges": 3,
+          "volumeLevel.quiet": 2,
+          "volumeLevel.medium": 3
+        }
+      },
+      "/ev",
+      {
+        "temp=": "combo"
+      },
+      "ev",
+      {
+        "VAR?": "combo"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "combo"
+      },
+      {
+        "VAR?": "bananas"
+      },
+      "+",
+      {
+        "VAR=": "combo",
+        "re": true
+      },
+      "/ev",
+      "ev",
+      {
+        "VAR?": "combo"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {}
+      },
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "^has values",
+            {
+              "->": "0.173"
+            },
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "->": ".^.b"
+        },
+        {
+          "b": [
+            "^is empty",
+            {
+              "->": "0.173"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "combo"
+      },
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "^has values",
+            {
+              "->": "0.180"
+            },
+            null
+          ]
+        }
+      ],
+      [
+        {
+          "->": ".^.b"
+        },
+        {
+          "b": [
+            "^is empty",
+            {
+              "->": "0.180"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.oranges": 3
+        }
+      },
+      "/ev",
+      {
+        "temp=": "fruit"
+      },
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.oranges": 3
+        }
+      },
+      "?",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^? has apples and oranges",
+            "\n",
+            {
+              "->": "0.192"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "VAR?": "apples"
+      },
+      "?",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^has apples",
+            "\n",
+            {
+              "->": "0.200"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.bananas": 2
+        }
+      },
+      "?",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^fruit has apples and bananas",
+            "\n",
+            {
+              "->": "0.208"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "list": {}
+      },
+      "?",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      "?",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.bananas": 2
+        }
+      },
+      "!?",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^hasnt apples and bananas",
+            "\n",
+            {
+              "->": "0.230"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruit"
+      },
+      {
+        "VAR?": "apples"
+      },
+      "!?",
+      "/ev",
+      [
+        {
+          "->": ".^.b",
+          "c": true
+        },
+        {
+          "b": [
+            "\n",
+            "^hasnt apples and bananas",
+            "\n",
+            {
+              "->": "0.238"
+            },
+            null
+          ]
+        }
+      ],
+      "nop",
+      "\n",
+      "ev",
+      {
+        "list": {}
+      },
+      {
+        "list": {}
+      },
+      "!?",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "fruitBowl"
+      },
+      "str",
+      "^empty",
+      "/str",
+      {
+        "f()": "listWithCommas"
+      },
+      "out",
+      "/ev",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "listWithCommas": [
+        {
+          "temp=": "if_empty"
+        },
+        {
+          "temp=": "list"
+        },
+        "ev",
+        {
+          "VAR?": "list"
+        },
+        "LIST_COUNT",
+        "/ev",
+        [
+          "du",
+          "ev",
+          2,
+          "==",
+          "/ev",
+          {
+            "->": ".^.b",
+            "c": true
+          },
+          {
+            "b": [
+              "pop",
+              "\n",
+              "ev",
+              {
+                "VAR?": "list"
+              },
+              "LIST_MIN",
+              "out",
+              "/ev",
+              "^, and ",
+              "ev",
+              {
+                "VAR?": "list"
+              },
+              {
+                "VAR?": "list"
+              },
+              "LIST_MIN",
+              "-",
+              {
+                "VAR?": "if_empty"
+              },
+              {
+                "f()": ".^.^.^"
+              },
+              "out",
+              "/ev",
+              "\n",
+              {
+                "->": ".^.^.^.10"
+              },
+              null
+            ]
+          }
+        ],
+        [
+          "du",
+          "ev",
+          1,
+          "==",
+          "/ev",
+          {
+            "->": ".^.b",
+            "c": true
+          },
+          {
+            "b": [
+              "pop",
+              "\n",
+              "ev",
+              {
+                "VAR?": "list"
+              },
+              "out",
+              "/ev",
+              "\n",
+              {
+                "->": ".^.^.^.10"
+              },
+              null
+            ]
+          }
+        ],
+        [
+          "du",
+          "ev",
+          0,
+          "==",
+          "/ev",
+          {
+            "->": ".^.b",
+            "c": true
+          },
+          {
+            "b": [
+              "pop",
+              "\n",
+              "ev",
+              {
+                "VAR?": "if_empty"
+              },
+              "out",
+              "/ev",
+              "\n",
+              {
+                "->": ".^.^.^.10"
+              },
+              null
+            ]
+          }
+        ],
+        [
+          {
+            "->": ".^.b"
+          },
+          {
+            "b": [
+              "pop",
+              "\n",
+              "ev",
+              {
+                "VAR?": "list"
+              },
+              "LIST_MIN",
+              "out",
+              "/ev",
+              "^, ",
+              "ev",
+              {
+                "VAR?": "list"
+              },
+              {
+                "VAR?": "list"
+              },
+              "LIST_MIN",
+              "-",
+              {
+                "VAR?": "if_empty"
+              },
+              {
+                "f()": ".^.^.^"
+              },
+              "out",
+              "/ev",
+              "\n",
+              {
+                "->": ".^.^.^.10"
+              },
+              null
+            ]
+          }
+        ],
+        "nop",
+        "\n",
+        null
+      ],
+      "global decl": [
+        "ev",
+        {
+          "list": {},
+          "origins": [
+            "volumeLevel"
+          ]
+        },
+        {
+          "VAR=": "volumeLevel"
+        },
+        {
+          "list": {
+            "fruitBowl.apples": 1,
+            "fruitBowl.bananas": 2,
+            "fruitBowl.oranges": 3
+          }
+        },
+        {
+          "VAR=": "fruitBowl"
+        },
+        "/ev",
+        "end",
+        null
+      ]
+    }
+  ],
+  "listDefs": {
+    "volumeLevel": {
+      "off": 1,
+      "quiet": 2,
+      "medium": 3,
+      "loud": 4,
+      "deafening": 5
+    },
+    "fruitBowl": {
+      "apples": 1,
+      "bananas": 2,
+      "oranges": 3
+    }
+  }
+}

@@ -1,7 +1,9 @@
 package gouache
 
 import (
+	"cmp"
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -75,20 +77,21 @@ type BeginTag struct{}        // "#"
 type EndTag struct{}          // "/#"
 type Out struct{}             // "out"
 type Pop struct{}             // "pop"
-type NoOp struct{}            // "pop"
+type DupTop struct{}          // "du"
+type NoOp struct{}            // "nop"
 type TurnCounter struct{}     // "turn"
 type FuncReturn struct{}      // "~ret"
 type Void struct{}            // "void"
+type ListInt struct{}         // "listInt"
+type ListValueFunc struct{}   // "LIST_VALUE"
+type ListCountFunc struct{}   // "LIST_COUNT"
+type ListMinFunc struct{}     // "LIST_MIN"
+type ListMaxFunc struct{}     // "LIST_MAX"
 
 type UnaryOp func(a Value) Value
 
 var Not UnaryOp = func(a Value) Value {
-	switch a := a.(type) {
-	case IntValue:
-		return boolean(a == 0)
-	default:
-		panic("unsupported type")
-	}
+	return boolean(!truthy(a))
 }
 
 var Neg UnaryOp = func(a Value) Value {
@@ -110,9 +113,21 @@ var Add BinOp = func(a, b Value) Value {
 		return a + b.(FloatValue)
 	case IntValue:
 		return a + b.(IntValue)
+	case ListValue:
+		return a.Add(b)
 	default:
 		panic("unsupported type")
 	}
+}
+
+var Has BinOp = func(a, b Value) Value {
+	al := a.(ListValue)
+	bl := b.(ListValue)
+	return boolean(al.Contains(bl))
+}
+
+var Hasnt BinOp = func(a, b Value) Value {
+	return Not(Has(a, b))
 }
 
 var Sub BinOp = func(a, b Value) Value {
@@ -121,6 +136,8 @@ var Sub BinOp = func(a, b Value) Value {
 		return a - b.(FloatValue)
 	case IntValue:
 		return a - b.(IntValue)
+	case ListValue:
+		return a.Sub(b)
 	default:
 		panic("unsupported type")
 	}
@@ -158,11 +175,16 @@ var Mod BinOp = func(a, b Value) Value {
 }
 
 var Eq BinOp = func(a, b Value) Value {
+	if eq, ok := a.(interface {
+		Eq(b Value) bool
+	}); ok {
+		return boolean(eq.Eq(b))
+	}
 	return boolean(a == b)
 }
 
 var Ne BinOp = func(a, b Value) Value {
-	return boolean(a != b)
+	return Not(Eq(a, b))
 }
 
 var And BinOp = func(a, b Value) Value {
@@ -221,7 +243,8 @@ type SetTemp struct {
 }
 
 type SetVar struct {
-	Name string `json:"VAR="`
+	Name     string `json:"VAR="`
+	Reassign bool   `json:"re"`
 }
 
 type GetVar struct {
@@ -272,6 +295,159 @@ func (b BoolValue) Output() Output {
 	return Output(s)
 }
 
+type ListValue struct {
+	Items   []ListItem `json:"list"`
+	Origins []string   `json:"origins"`
+}
+
+func ListEmpty(origin string) ListValue {
+	return ListValue{
+		Origins: []string{origin},
+	}
+}
+
+func ListSingle(origin, name string, value int) ListValue {
+	return ListValue{
+		Items: []ListItem{
+			{Origin: origin, Name: name, Value: value},
+		},
+	}
+}
+
+func (l ListValue) At(index int) ListValue {
+	return ListValue{
+		Items: []ListItem{
+			l.Items[index],
+		},
+	}
+}
+
+func (l ListValue) Contains(v ListValue) bool {
+	if len(v.Items) == 0 {
+		return false
+	}
+	for _, item := range v.Items {
+		if !l.contains(item) {
+			return false
+		}
+	}
+	return true
+}
+
+func (l ListValue) contains(x ListItem) bool {
+	return slices.Contains(l.Items, x)
+}
+
+func (l ListValue) Eq(v Value) bool {
+	l2, ok := v.(ListValue)
+	if !ok {
+		return false
+	}
+	return slices.Equal(l.Items, l2.Items)
+}
+
+func (l ListValue) Resolve(defs ListDefs) ListValue {
+	var items []ListItem
+	for _, item := range l.Items {
+		if item.Name != "" {
+			items = append(items, item)
+			continue
+		}
+		if o, ok := defs[item.Origin]; ok {
+			for name, value := range o {
+				if value == item.Value {
+					items = append(items, ListItem{
+						Origin: item.Origin,
+						Name:   name,
+						Value:  value,
+					})
+				}
+			}
+		}
+	}
+	return ListValue{
+		Items: items,
+	}
+}
+
+func (l ListValue) Put(origin, name string, value int) ListValue {
+	return l.Add(ListSingle(origin, name, value))
+}
+
+func (l ListValue) Add(v Value) ListValue {
+	switch v := v.(type) {
+	case ListValue:
+		return l.merge(v)
+	case IntValue:
+		return l.inc(int(v))
+	default:
+		panic("unsupported type")
+	}
+}
+
+func (l ListValue) Sub(v Value) ListValue {
+	switch v := v.(type) {
+	case ListValue:
+		return l.diff(v)
+	case IntValue:
+		return l.inc(-int(v))
+	default:
+		panic("unsupported type")
+	}
+}
+
+func (l ListValue) inc(v int) ListValue {
+	var items []ListItem
+	for _, item := range l.Items {
+		items = append(items, ListItem{
+			Origin: item.Origin,
+			Value:  item.Value + v,
+		})
+	}
+	return ListValue{
+		Items: items,
+	}
+}
+
+func (l ListValue) diff(m ListValue) ListValue {
+	var items []ListItem
+	for _, item := range l.Items {
+		if !m.contains(item) {
+			items = append(items, item)
+		}
+	}
+	return ListValue{
+		Items: items,
+	}
+}
+
+func (l ListValue) merge(m ListValue) ListValue {
+	var items []ListItem
+	items = append(items, l.Items...)
+	items = append(items, m.Items...)
+	slices.SortFunc(items, func(a, b ListItem) int {
+		if c := cmp.Compare(a.Value, b.Value); c != 0 {
+			return c
+		}
+		return cmp.Compare(a.Origin, b.Origin)
+	})
+	items = slices.Compact(items)
+	return ListValue{
+		Items: items,
+	}
+}
+
+func (l ListValue) Output() Output {
+	var b strings.Builder
+	for i, item := range l.Items {
+		if i > 0 {
+			b.WriteString(", ")
+		}
+		b.WriteString(item.Name)
+	}
+	return Output(b.String())
+}
+
 func boolean(b bool) BoolValue {
 	return BoolValue(b)
 }
@@ -282,6 +458,8 @@ func truthy(v Value) bool {
 		return bool(v)
 	case IntValue:
 		return v != 0
+	case ListValue:
+		return len(v.Items) > 0
 	default:
 		panic("unsupported type")
 	}

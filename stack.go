@@ -1,6 +1,9 @@
 package gouache
 
-import "fmt"
+import (
+	"fmt"
+	"strings"
+)
 
 type Visit struct {
 	Address    Address
@@ -113,11 +116,63 @@ const (
 	newlineBuffered
 )
 
+type ListItem struct {
+	Name   string
+	Origin string
+	Value  int
+}
+
+func (li ListItem) Add(v Value) Value {
+	return ListItem{
+		Origin: li.Origin,
+		Value:  li.Value + int(v.(IntValue)),
+	}
+}
+
+func (li ListItem) Output() Output {
+	return Output(li.Name)
+}
+
+type ListDefs map[string]map[string]int
+
+func (l ListDefs) Value(origin string, value int) ListValue {
+	o, ok := l[origin]
+	if ok {
+		for name, v := range o {
+			if v == value {
+				return ListSingle(origin, name, value)
+			}
+		}
+	}
+	return ListEmpty(origin)
+}
+
+func (l ListDefs) Get(name string) (ListValue, bool) {
+	if origin, key, ok := strings.Cut(name, "."); ok {
+		o, ok := l[origin]
+		if !ok {
+			return ListEmpty(origin), false
+		}
+		v, ok := o[key]
+		if !ok {
+			return ListEmpty(origin), false
+		}
+		return ListSingle(origin, key, v), true
+	}
+	for origin, values := range l {
+		if value, ok := values[name]; ok {
+			return ListSingle(origin, name, value), true
+		}
+	}
+	return ListValue{}, false
+}
+
 type CallFrame struct {
 	visits    *Visit
 	turnCount int
 	globals   *Vars
 	evalStack *EvalFrame
+	listDefs  ListDefs
 
 	locals       *Vars
 	callDepth    int
@@ -190,7 +245,14 @@ func (f *CallFrame) VisitCount(addr Address) int {
 	return f.visits.Count(addr)
 }
 
+func (f *CallFrame) ListInt(origin string, value int) ListValue {
+	return f.listDefs.Value(origin, value)
+}
+
 func (f *CallFrame) PushVal(v Value) *CallFrame {
+	if li, ok := v.(ListValue); ok {
+		v = li.Resolve(f.listDefs)
+	}
 	return f.updateEvalStack(func(s *EvalFrame) *EvalFrame { return s.Push(v) })
 }
 
@@ -306,6 +368,18 @@ func (f *CallFrame) getRef(r VarRef) Value {
 	return f.prev.getRef(r)
 }
 
+func (f *CallFrame) UpdateVar(name string, v Value) *CallFrame {
+	if f == nil {
+		panic("uninitialized frame does not have any vars")
+	}
+	if f.locals != nil {
+		if _, ok := f.locals.Get(name); ok {
+			return f.WithLocal(name, v)
+		}
+	}
+	return f.WithGlobal(name, v)
+}
+
 func (f *CallFrame) GetVar(name string) (Value, bool) {
 	if f == nil {
 		return nil, false
@@ -320,9 +394,11 @@ func (f *CallFrame) GetVar(name string) (Value, bool) {
 		}
 	}
 	if f.globals != nil {
-		return f.globals.Get(name)
+		if v, ok := f.globals.Get(name); ok {
+			return v, true
+		}
 	}
-	return nil, false
+	return f.listDefs.Get(name)
 }
 
 func (f *CallFrame) withGlobals(v *Vars) *CallFrame {

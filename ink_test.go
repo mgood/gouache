@@ -19,7 +19,7 @@ func TestSimpleTextOutput(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, _, _ := Continue(t, Init(root), root)
+	output, _, _ := Continue(t, Init(root, nil), root)
 	assert.Equal(t, "Once upon a time...\n", output)
 }
 
@@ -173,7 +173,7 @@ func TestSingleChoice(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, choices, eval := Continue(t, Init(root), root)
+	output, choices, eval := Continue(t, Init(root, nil), root)
 	assert.Equal(t, "Once upon a time...\n", output)
 	choiceNames := make([]string, len(choices))
 	for i, choice := range choices {
@@ -245,14 +245,14 @@ func Continue(t testing.TB, eval Evaluator, elem Element) (string, []Choice, Eva
 	return output.String(), choices, eval
 }
 
-func load(t testing.TB, fn string) Element {
+func load(t testing.TB, fn string) (Element, ListDefs) {
 	t.Helper()
 	f, err := os.Open(fn)
 	assert.NoError(t, err)
 	t.Cleanup(func() { f.Close() })
-	el, err := LoadJSON(f)
+	el, listDefs, err := LoadJSON(f)
 	require.NoError(t, err)
-	return el
+	return el, listDefs
 }
 
 func readfile(t *testing.T, fn string) string {
@@ -270,6 +270,7 @@ func TestSamples(t *testing.T) {
 		"global",
 		"if-else",
 		"math",
+		"list-basics",
 		"pop",
 		"sample",
 		"stitch",
@@ -281,9 +282,9 @@ func TestSamples(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"
 			expected := readfile(t, base+".txt")
-			root := load(t, base+".json")
+			root, listDefs := load(t, base+".json")
 			var b strings.Builder
-			output, choices, eval := Continue(t, Init(root), root)
+			output, choices, eval := Continue(t, Init(root, listDefs), root)
 			b.WriteString(output)
 			for len(choices) > 0 {
 				b.WriteRune('\n')

@@ -32,8 +32,12 @@ type Evaluator interface {
 	Step(Element) (Output, *Choice, Element, Evaluator)
 }
 
-func Init(root Element) Evaluator {
-	var eval Evaluator = BaseEvaluator{}
+func Init(root Element, listDefs ListDefs) Evaluator {
+	var eval Evaluator = BaseEvaluator{
+		Stack: &CallFrame{
+			listDefs: listDefs,
+		},
+	}
 	if g := root.Find("global decl"); g != nil {
 		var s Output
 		var choice *Choice
@@ -103,6 +107,12 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		_, s := e.Stack.PopVal()
 		s, next := popIfEnded(s, el.Next())
 		return "", nil, next, endEval(s)
+	case DupTop:
+		v, s := e.Stack.PopVal()
+		s = s.PushVal(v)
+		s = s.PushVal(v)
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case Divert:
 		addr := n.Dest
 		if n.Var {
@@ -170,7 +180,11 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", choice, next, endEval(s)
 	case SetVar:
 		val, s := e.Stack.PopVal()
-		s = s.WithGlobal(n.Name, val)
+		if n.Reassign {
+			s = s.UpdateVar(n.Name, val)
+		} else {
+			s = s.WithGlobal(n.Name, val)
+		}
 		s, next := popIfEnded(s, el.Next())
 		return "", nil, next, endEval(s)
 	case FuncReturn:
@@ -248,15 +262,20 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case SetVar:
 		val, s := e.Stack.PopVal()
-		s = s.WithGlobal(n.Name, val)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		if n.Reassign {
+			s = s.UpdateVar(n.Name, val)
+		} else {
+			s = s.WithGlobal(n.Name, val)
+		}
+		s, next := popIfEnded(s, el.Next())
+		return "", nil, next, endEval(s)
 	case SetTemp:
 		val, s := e.Stack.PopVal()
 		// TODO use "re" reassign flag to check that it's already
 		// been set?
 		s = s.WithLocal(n.Name, val)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
-	case DivertTargetValue, IntValue, FloatValue, BoolValue:
+	case DivertTargetValue, IntValue, FloatValue, BoolValue, ListValue, Text:
 		s := e.Stack.PushVal(n)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case BinOp:
@@ -327,6 +346,41 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case VarRef:
 		s := e.Stack.PushVarRef(n.Name)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListInt:
+		val, s := e.Stack.PopVal()
+		origin, s := s.PopVal()
+		v := s.ListInt(string(origin.(Text)), int(val.(IntValue)))
+		s = s.PushVal(v)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListValueFunc:
+		val, s := pop[ListValue](e.Stack)
+		if len(val.Items) == 0 {
+			s = s.PushVal(IntValue(0))
+		} else {
+			s = s.PushVal(IntValue(val.Items[len(val.Items)-1].Value))
+		}
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListCountFunc:
+		val, s := pop[ListValue](e.Stack)
+		count := IntValue(len(val.Items))
+		s = s.PushVal(count)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListMinFunc:
+		val, s := pop[ListValue](e.Stack)
+		if len(val.Items) == 0 {
+			s = s.PushVal(val)
+		} else {
+			s = s.PushVal(val.At(0))
+		}
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListMaxFunc:
+		val, s := pop[ListValue](e.Stack)
+		if len(val.Items) == 0 {
+			s = s.PushVal(val)
+		} else {
+			s = s.PushVal(val.At(len(val.Items) - 1))
+		}
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
