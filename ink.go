@@ -89,6 +89,7 @@ type ListCountFunc struct{}   // "LIST_COUNT"
 type ListMinFunc struct{}     // "LIST_MIN"
 type ListMaxFunc struct{}     // "LIST_MAX"
 type ListAllFunc struct{}     // "LIST_ALL"
+type ListRangeFunc struct{}   // "range"
 
 type UnaryOp func(a Value) Value
 
@@ -328,6 +329,12 @@ func (l ListValue) At(index int) ListValue {
 	}
 }
 
+func (l ListValue) Range(start, stop int) ListValue {
+	return l.filter(l, func(x ListItem) bool {
+		return start <= x.Value && x.Value <= stop
+	})
+}
+
 func (l ListValue) Contains(v ListValue) bool {
 	if len(v.Items) == 0 {
 		return false
@@ -420,12 +427,12 @@ func (l ListValue) inc(v int) ListValue {
 	}
 }
 
-func (l ListValue) diff(m ListValue) ListValue {
+func (l ListValue) filter(m ListValue, p func(ListItem) bool) ListValue {
 	r := ListValue{
 		Origins: make(map[string]struct{}),
 	}
 	for _, item := range l.Items {
-		if !m.contains(item) {
+		if p(item) {
 			r.Items = append(r.Items, item)
 			r.Origins[item.Origin] = struct{}{}
 		}
@@ -434,6 +441,12 @@ func (l ListValue) diff(m ListValue) ListValue {
 		r.Origins = l.Origins
 	}
 	return r
+}
+
+func (l ListValue) diff(m ListValue) ListValue {
+	return l.filter(m, func(x ListItem) bool {
+		return !m.contains(x)
+	})
 }
 
 func (l ListValue) merge(m ListValue) ListValue {

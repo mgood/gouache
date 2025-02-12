@@ -8,6 +8,7 @@ if name is unique, set that global name too
 */
 
 LIST volumeLevel = off, quiet, medium, loud, deafening
+
 ~ temp x = loud
 {x}
 {x == medium}
@@ -91,6 +92,9 @@ LIST fruitBowl = (apples), (bananas), (oranges)
 r ={r}
 r all {LIST_ALL(r)}
 {LIST_ALL((off, apples) - (off, apples))}
+
+{LIST_RANGE(LIST_ALL(volumeLevel), 2, 3)}
+{LIST_RANGE((off, medium, loud), 2, 3)}
 
 === function listWithCommas(list, if_empty)
     {LIST_COUNT(list):

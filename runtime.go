@@ -388,6 +388,12 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		v := s.ListAll(val)
 		s = s.PushVal(v)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case ListRangeFunc:
+		end, s := pop[IntValue](e.Stack)
+		start, s := pop[IntValue](s)
+		val, s := pop[ListValue](s)
+		s = s.PushVal(val.Range(int(start), int(end)))
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}

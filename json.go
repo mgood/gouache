@@ -120,6 +120,8 @@ func loadNode(n any) Node {
 			return ListMaxFunc{}
 		case "LIST_ALL":
 			return ListAllFunc{}
+		case "range":
+			return ListRangeFunc{}
 		case "+":
 			return Add
 		case "-":

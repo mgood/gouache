@@ -648,6 +648,31 @@
       "out",
       "/ev",
       "\n",
+      "ev",
+      {
+        "VAR?": "volumeLevel"
+      },
+      "LIST_ALL",
+      2,
+      3,
+      "range",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "volumeLevel.off": 1,
+          "volumeLevel.medium": 3,
+          "volumeLevel.loud": 4
+        }
+      },
+      2,
+      3,
+      "range",
+      "out",
+      "/ev",
+      "\n",
       [
         "done",
         {
