@@ -130,7 +130,9 @@ something gte empty {(off, quiet) >= ()}
 
 {LIST_INVERT((bananas))}
 {LIST_INVERT(fruitBowl())}
-{LIST_INVERT(())}
+invert empty{LIST_INVERT(())}
+
+{(apples, bananas) ^ (bananas, oranges)}
 
 === function listWithCommas(list, if_empty)
     {LIST_COUNT(list):

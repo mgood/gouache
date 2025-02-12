@@ -122,6 +122,8 @@ func loadNode(n any) Node {
 			return ListAllFunc{}
 		case "LIST_INVERT":
 			return ListInvertFunc{}
+		case "L^":
+			return ListIntersectFunc{}
 		case "range":
 			return ListRangeFunc{}
 		case "+":

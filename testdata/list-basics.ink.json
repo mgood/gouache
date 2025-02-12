@@ -1134,11 +1134,29 @@
       "out",
       "/ev",
       "\n",
+      "^invert empty",
       "ev",
       {
         "list": {}
       },
       "LIST_INVERT",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "list": {
+          "fruitBowl.apples": 1,
+          "fruitBowl.bananas": 2
+        }
+      },
+      {
+        "list": {
+          "fruitBowl.bananas": 2,
+          "fruitBowl.oranges": 3
+        }
+      },
+      "L^",
       "out",
       "/ev",
       "\n",

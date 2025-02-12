@@ -70,27 +70,28 @@ type FuncCall struct {
 	Dest Address `json:"f()"`
 }
 
-type BeginEval struct{}       // "ev"
-type EndEval struct{}         // "/ev"
-type BeginStringEval struct{} // "str"
-type EndStringEval struct{}   // "/str"
-type BeginTag struct{}        // "#"
-type EndTag struct{}          // "/#"
-type Out struct{}             // "out"
-type Pop struct{}             // "pop"
-type DupTop struct{}          // "du"
-type NoOp struct{}            // "nop"
-type TurnCounter struct{}     // "turn"
-type FuncReturn struct{}      // "~ret"
-type Void struct{}            // "void"
-type ListInt struct{}         // "listInt"
-type ListValueFunc struct{}   // "LIST_VALUE"
-type ListCountFunc struct{}   // "LIST_COUNT"
-type ListMinFunc struct{}     // "LIST_MIN"
-type ListMaxFunc struct{}     // "LIST_MAX"
-type ListAllFunc struct{}     // "LIST_ALL"
-type ListInvertFunc struct{}  // "LIST_INVERT"
-type ListRangeFunc struct{}   // "range"
+type BeginEval struct{}         // "ev"
+type EndEval struct{}           // "/ev"
+type BeginStringEval struct{}   // "str"
+type EndStringEval struct{}     // "/str"
+type BeginTag struct{}          // "#"
+type EndTag struct{}            // "/#"
+type Out struct{}               // "out"
+type Pop struct{}               // "pop"
+type DupTop struct{}            // "du"
+type NoOp struct{}              // "nop"
+type TurnCounter struct{}       // "turn"
+type FuncReturn struct{}        // "~ret"
+type Void struct{}              // "void"
+type ListInt struct{}           // "listInt"
+type ListValueFunc struct{}     // "LIST_VALUE"
+type ListCountFunc struct{}     // "LIST_COUNT"
+type ListMinFunc struct{}       // "LIST_MIN"
+type ListMaxFunc struct{}       // "LIST_MAX"
+type ListAllFunc struct{}       // "LIST_ALL"
+type ListInvertFunc struct{}    // "LIST_INVERT"
+type ListIntersectFunc struct{} // "L^"
+type ListRangeFunc struct{}     // "range"
 
 type UnaryOp func(a Value) Value
 
@@ -455,6 +456,12 @@ func (l ListValue) Sub(v Value) ListValue {
 	default:
 		panic("unsupported type")
 	}
+}
+
+func (l ListValue) Intersect(v ListValue) ListValue {
+	return l.filter(v, func(x ListItem) bool {
+		return v.contains(x)
+	})
 }
 
 func (l ListValue) inc(v int) ListValue {

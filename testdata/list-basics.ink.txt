@@ -74,3 +74,5 @@ empty gte something false
 something gte empty true
 apples, oranges
 apples, bananas, oranges
+invert empty
+bananas
