@@ -366,6 +366,20 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		count := IntValue(e.Stack.VisitCount(addr))
 		s := e.Stack.PushVal(count)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case VisitCounter:
+		base, _ := el.Address()
+		// addr := resolve(base, Address(n.Container))
+		addr := base
+		count := IntValue(e.Stack.VisitCount(addr))
+		s := e.Stack.PushVal(count)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case TurnsSince:
+		dv, s := pop[DivertTargetValue](e.Stack)
+		base, _ := el.Address()
+		addr := resolve(base, dv.Dest)
+		count := IntValue(e.Stack.TurnsSince(addr))
+		s = s.PushVal(count)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case Done, End:
 		return "", nil, nil, BaseEvaluator{Stack: e.Stack}
 	case Out:
