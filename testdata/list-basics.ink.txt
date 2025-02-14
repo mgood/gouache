@@ -44,6 +44,7 @@ r all apples, bananas, oranges
 apples, off, bananas, quiet, oranges, medium, loud, deafening
 quiet, medium
 medium
+quiet, medium, loud
 true
 false
 false

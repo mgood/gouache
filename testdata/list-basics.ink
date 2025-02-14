@@ -95,6 +95,7 @@ r all {LIST_ALL(r)}
 
 {LIST_RANGE(LIST_ALL(volumeLevel), 2, 3)}
 {LIST_RANGE((off, medium, loud), 2, 3)}
+{LIST_RANGE(LIST_ALL(volumeLevel), quiet, loud)}
 
 {(off, quiet) < (loud, deafening)}
 {(loud, deafening) < (off, quiet)}

@@ -675,6 +675,21 @@
       "\n",
       "ev",
       {
+        "VAR?": "volumeLevel"
+      },
+      "LIST_ALL",
+      {
+        "VAR?": "quiet"
+      },
+      {
+        "VAR?": "loud"
+      },
+      "range",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
         "list": {
           "volumeLevel.off": 1,
           "volumeLevel.quiet": 2

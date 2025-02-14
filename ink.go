@@ -379,9 +379,25 @@ func (l ListValue) At(index int) ListValue {
 	}
 }
 
-func (l ListValue) Range(start, stop int) ListValue {
+func numeric(v Value) int {
+	switch v := v.(type) {
+	case IntValue:
+		return int(v)
+	case ListValue:
+		if len(v.Items) != 1 {
+			panic(fmt.Errorf("should have 1 item to treat as number"))
+		}
+		return v.Items[0].Value
+	default:
+		panic(fmt.Errorf("unexpected type %T", v))
+	}
+}
+
+func (l ListValue) Range(start, stop Value) ListValue {
+	a := numeric(start)
+	b := numeric(stop)
 	return l.filter(l, func(x ListItem) bool {
-		return start <= x.Value && x.Value <= stop
+		return a <= x.Value && x.Value <= b
 	})
 }
 

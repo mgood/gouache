@@ -418,10 +418,10 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		s = s.PushVal(v.Sub(val))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case ListRangeFunc:
-		end, s := pop[IntValue](e.Stack)
-		start, s := pop[IntValue](s)
+		end, s := e.Stack.PopVal()
+		start, s := s.PopVal()
 		val, s := pop[ListValue](s)
-		s = s.PushVal(val.Range(int(start), int(end)))
+		s = s.PushVal(val.Range(start, end))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case ListIntersectFunc:
 		a, s := pop[ListValue](e.Stack)
