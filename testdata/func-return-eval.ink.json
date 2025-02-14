@@ -1,0 +1,83 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "^Have ",
+      "ev",
+      {
+        "VAR?": "Inventory"
+      },
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      {
+        "VAR?": "cane"
+      },
+      {
+        "f()": "get"
+      },
+      "pop",
+      "/ev",
+      "\n",
+      "^Have ",
+      "ev",
+      {
+        "VAR?": "Inventory"
+      },
+      "out",
+      "/ev",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "get": [
+        {
+          "temp=": "x"
+        },
+        "ev",
+        {
+          "VAR?": "Inventory"
+        },
+        {
+          "VAR?": "x"
+        },
+        "+",
+        {
+          "VAR=": "Inventory",
+          "re": true
+        },
+        "/ev",
+        null
+      ],
+      "global decl": [
+        "ev",
+        {
+          "list": {
+            "Inventory.none": 1
+          }
+        },
+        {
+          "VAR=": "Inventory"
+        },
+        "/ev",
+        "end",
+        null
+      ]
+    }
+  ],
+  "listDefs": {
+    "Inventory": {
+      "none": 1,
+      "cane": 2,
+      "knife": 3
+    }
+  }
+}

@@ -267,6 +267,7 @@ func TestSamples(t *testing.T) {
 		"choice-condition",
 		"func-abs",
 		"func-text-content",
+		"func-return-eval",
 		"global",
 		"if-else",
 		"math",
