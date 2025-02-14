@@ -277,7 +277,17 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		s := e.Stack.WithStringMode(true)
 		return "", nil, el.Next(), StringEvaluator{Stack: s}
 	case EndEval:
-		return "", nil, el.Next(), e.endEval()
+		next := el.Next()
+		if next != nil {
+			// if we have another node, we want to decrement the evalDepth and
+			// continue
+			return "", nil, next, e.endEval()
+		}
+		// however, if we're at the end of the container, popping the frame will
+		// reset the evalDepth to the prior frame, so we don't want to decrement it
+		s, next := e.Stack.PopFrame()
+		s = s.PushVal(VoidValue{})
+		return "", nil, next, endEval(s)
 	case GetVar:
 		val, ok := e.Stack.GetVar(n.Name)
 		if !ok {
