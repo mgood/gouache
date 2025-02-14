@@ -38,6 +38,19 @@ func (v *Visit) Count(addr Address) int {
 	return count
 }
 
+func (v *Visit) LastVisited(addr Address, turn int) int {
+	for ; v != nil; v = v.Prev {
+		// this looks at the parent for cases like "start.0" where we entered
+		// "start" in a child container, but didn't track the container entry though
+		// this should probably have a more precise definition for how we track the
+		// container entry
+		if addr == v.Address || addr == v.Address.Parent() {
+			return v.EntryTurn
+		}
+	}
+	return -1
+}
+
 type VarsFrame struct {
 	vars *Vars
 	prev *VarsFrame
@@ -248,6 +261,17 @@ func (f *CallFrame) Visit(addr Address, index int) *CallFrame {
 	r := *f
 	r.visits = visits
 	return &r
+}
+
+func (f *CallFrame) TurnsSince(addr Address) int {
+	if f == nil {
+		return -1
+	}
+	lastVisit := f.visits.LastVisited(addr, f.turnCount)
+	if lastVisit == -1 {
+		return -1
+	}
+	return f.turnCount - lastVisit
 }
 
 func (f *CallFrame) VisitCount(addr Address) int {

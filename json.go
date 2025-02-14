@@ -106,6 +106,10 @@ func loadNode(n any) Node {
 			return Void{}
 		case "turn":
 			return TurnCounter{}
+		case "turns":
+			return TurnsSince{}
+		case "visit":
+			return VisitCounter{}
 		case "~ret":
 			return FuncReturn{}
 		case "->->":
