@@ -202,7 +202,7 @@ type CallFrame struct {
 	locals       *Vars
 	callDepth    int
 	evalDepth    int
-	stringMode   bool
+	stringDepth  int
 	newlineState newlineState
 	prev         *CallFrame
 	returnTo     Element
@@ -388,12 +388,12 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element) {
 		evalStack: f.evalStack,
 		listDefs:  f.listDefs,
 
-		callDepth:  p.callDepth,
-		locals:     p.locals,
-		evalDepth:  p.evalDepth,
-		stringMode: p.stringMode,
-		prev:       p.prev,
-		returnTo:   p.returnTo,
+		callDepth:   p.callDepth,
+		locals:      p.locals,
+		evalDepth:   p.evalDepth,
+		stringDepth: p.stringDepth,
+		prev:        p.prev,
+		returnTo:    p.returnTo,
 	}, f.returnTo
 }
 
@@ -490,11 +490,11 @@ func (f *CallFrame) IncEvalDepth(by int) *CallFrame {
 	return &r
 }
 
-func (f *CallFrame) WithStringMode(on bool) *CallFrame {
+func (f *CallFrame) IncStringDepth(by int) *CallFrame {
 	if f == nil {
-		return &CallFrame{stringMode: on}
+		return &CallFrame{stringDepth: by}
 	}
 	r := *f
-	r.stringMode = on
+	r.stringDepth += by
 	return &r
 }

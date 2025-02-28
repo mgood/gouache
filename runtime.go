@@ -270,7 +270,7 @@ type EvalEvaluator struct {
 
 func endEval(s *CallFrame) Evaluator {
 	switch {
-	case s.stringMode:
+	case s.stringDepth > 0:
 		return StringEvaluator{Stack: s}
 	case s.evalDepth > 0:
 		return EvalEvaluator{Stack: s}
@@ -287,7 +287,7 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	e.Stack = e.Stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case BeginStringEval:
-		s := e.Stack.WithStringMode(true)
+		s := e.Stack.IncStringDepth(1)
 		return "", nil, el.Next(), StringEvaluator{Stack: s}
 	case EndEval:
 		next := el.Next()
@@ -323,8 +323,11 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		// been set?
 		s = s.WithLocal(n.Name, val)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
-	case DivertTargetValue, IntValue, FloatValue, BoolValue, ListValue, Text:
+	case DivertTargetValue, IntValue, FloatValue, BoolValue, ListValue:
 		s := e.Stack.PushVal(n)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case Text:
+		s := e.Stack.PushVal(StringValue(n))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case BinOp:
 		b, s := e.Stack.PopVal()
@@ -412,7 +415,7 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case ListInt:
 		val, s := e.Stack.PopVal()
 		origin, s := s.PopVal()
-		v := s.ListInt(string(origin.(Text)), int(val.(IntValue)))
+		v := s.ListInt(string(origin.(StringValue)), int(val.(IntValue)))
 		s = s.PushVal(v)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	case ListValueFunc:
@@ -523,7 +526,9 @@ func (e StringEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) 
 		return "", nil, dest, e
 	case EndStringEval:
 		s := e.Stack.PushVal(StringValue(e.output))
-		s = s.WithStringMode(false)
+		// XXX this passes I022, but could it get confused depending on the times
+		// we're switching between string and eval mode
+		s = s.IncStringDepth(-1)
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
