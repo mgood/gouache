@@ -1,0 +1,50 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "^NOTE: this output is manually generated",
+      "\n",
+      "^The seed will give the same output each time, but we don't use the same random",
+      "\n",
+      "^generator as inklecate to ensure direct compatibility.",
+      "\n",
+      "ev",
+      235,
+      "srnd",
+      "pop",
+      "/ev",
+      "\n",
+      "ev",
+      1,
+      10,
+      "rnd",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      1,
+      10,
+      "rnd",
+      "out",
+      "/ev",
+      "\n",
+      "ev",
+      1,
+      10,
+      "rnd",
+      "out",
+      "/ev",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    null
+  ],
+  "listDefs": {}
+}

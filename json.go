@@ -178,6 +178,10 @@ func loadNode(n any) Node {
 			return Int
 		case "CEILING":
 			return Ceiling
+		case "srnd":
+			return Srnd
+		case "rnd":
+			return Rnd
 		}
 		if s, found := strings.CutPrefix(n, "^"); found {
 			return Text(s)

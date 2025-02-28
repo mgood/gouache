@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"math"
+	"math/rand/v2"
 	"slices"
 	"strings"
 )
@@ -322,6 +323,32 @@ var Max BinOp = func(a, b Value) Value {
 		return b
 	}
 	return a
+}
+
+// TODO the source should be stored in the stack so that if there are
+// concurrent stories they each have their own random state.
+// However, we'll just use a global random source for now.
+// Since PGC uses a simple internal state, we could also copy the struct
+// to preserve its state after each call to ensure determinism.
+var randSource *rand.Rand
+
+func seedRandom(seed uint64) {
+	randSource = rand.New(rand.NewPCG(0, seed))
+}
+
+var Rnd BinOp = func(a, b Value) Value {
+	if randSource == nil {
+		seedRandom(rand.Uint64())
+	}
+	lo := int64(a.(IntValue))
+	hi := int64(b.(IntValue))
+	r := lo + randSource.Int64N(hi-lo)
+	return IntValue(r)
+}
+
+var Srnd UnaryOp = func(v Value) Value {
+	seedRandom(uint64(v.(IntValue)))
+	return VoidValue{}
 }
 
 type SetTemp struct {
