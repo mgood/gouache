@@ -245,9 +245,13 @@ func loadNode(n any) Node {
 			}
 		}
 		if v, ok := n["->t->"]; ok {
-			return TunnelCall{
+			r := TunnelCall{
 				Dest: Address(v.(string)),
 			}
+			if v, ok := n["var"]; ok {
+				r.Var = v.(bool)
+			}
+			return r
 		}
 		if v, ok := n["^var"]; ok {
 			ci, err := n["ci"].(json.Number).Int64()
