@@ -8,7 +8,10 @@ import (
 	"strings"
 )
 
-const InkVersion = 21
+const (
+	MinInkVersion = 19
+	MaxInkVersion = 21
+)
 
 type ContainerFlag uint32
 

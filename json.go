@@ -20,7 +20,7 @@ func LoadJSON(r io.Reader) (Element, ListDefs, error) {
 	if err := dec.Decode(&b); err != nil {
 		return nil, nil, err
 	}
-	if b.Version != InkVersion {
+	if b.Version < MinInkVersion || b.Version > MaxInkVersion {
 		return nil, nil, ErrUnsupportedVersion
 	}
 	return LoadContainer(b.Root).First(), b.ListDefs, nil
