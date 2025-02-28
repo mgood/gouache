@@ -375,7 +375,15 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, dest, e
 	case FuncCall:
 		s := e.Stack.PushFrame(el.Next(), true)
-		dest := el.Find(n.Dest)
+		addr := n.Dest
+		if n.Var {
+			addrVar, ok := e.Stack.GetVar(string(addr))
+			if !ok {
+				panic(fmt.Errorf("address variable %q not found", addr))
+			}
+			addr = addrVar.(DivertTargetValue).Dest
+		}
+		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("function call target %q not found", n.Dest))
 		}
