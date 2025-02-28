@@ -172,6 +172,12 @@ func loadNode(n any) Node {
 			return Min
 		case "MAX":
 			return Max
+		case "FLOOR":
+			return Floor
+		case "INT":
+			return Int
+		case "CEILING":
+			return Ceiling
 		}
 		if s, found := strings.CutPrefix(n, "^"); found {
 			return Text(s)
