@@ -64,6 +64,7 @@ type ChoicePoint struct {
 	Dest  Address         `json:"*"`
 	Flags ChoicePointFlag `json:"flg"`
 }
+
 type Divert struct {
 	Dest         Address `json:"->"`
 	Var          bool    `json:"var"`
@@ -77,6 +78,7 @@ type FuncCall struct {
 
 type TunnelCall struct {
 	Dest Address `json:"->t->"`
+	Var  bool    `json:"var"`
 }
 
 type BeginEval struct{}         // "ev"
