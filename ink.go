@@ -74,6 +74,7 @@ type Divert struct {
 
 type FuncCall struct {
 	Dest Address `json:"f()"`
+	Var  bool    `json:"var"`
 }
 
 type TunnelCall struct {

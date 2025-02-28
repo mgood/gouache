@@ -240,9 +240,13 @@ func loadNode(n any) Node {
 			}
 		}
 		if v, ok := n["f()"]; ok {
-			return FuncCall{
+			r := FuncCall{
 				Dest: Address(v.(string)),
 			}
+			if v, ok := n["var"]; ok {
+				r.Var = v.(bool)
+			}
+			return r
 		}
 		if v, ok := n["->t->"]; ok {
 			r := TunnelCall{
