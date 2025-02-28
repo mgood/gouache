@@ -273,6 +273,7 @@ func TestSamples(t *testing.T) {
 		"math",
 		"list-basics",
 		"pop",
+		"random",
 		"sample",
 		"stitch",
 		"tempvar",

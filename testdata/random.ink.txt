@@ -1,0 +1,6 @@
+NOTE: this output is manually generated
+The seed will give the same output each time, but we don't use the same random
+generator as inklecate to ensure direct compatibility.
+4
+2
+5
