@@ -218,6 +218,10 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	case NoOp:
 		s, next := popIfEnded(e.Stack, el.Next())
 		return "", nil, next, endEval(s)
+	case IntValue, FloatValue:
+		// raw int and float outside of an eval block are ignored
+		s, next := popIfEnded(e.Stack, el.Next())
+		return "", nil, next, endEval(s)
 	case Done, End:
 		return "", nil, nil, e
 	default:
