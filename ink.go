@@ -194,6 +194,8 @@ var Sub BinOp = func(a, b Value) Value {
 		return a - b.(IntValue)
 	case ListValue:
 		return a.Sub(b)
+	case BoolValue:
+		return boolInt(a) - b.(IntValue)
 	default:
 		panic("unsupported type")
 	}
