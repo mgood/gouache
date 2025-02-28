@@ -132,7 +132,7 @@ var Add BinOp = func(a, b Value) Value {
 	case ListValue:
 		return a.Add(b)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
