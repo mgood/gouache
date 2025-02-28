@@ -41,16 +41,27 @@ func Continue(eval gouache.Evaluator, elem gouache.Element) (string, []gouache.C
 	var s gouache.Output
 	skipNewline := true
 	var choice *gouache.Choice
+	write := func(o gouache.Output) {
+		s := o.String()
+		for {
+			n := strings.ReplaceAll(s, "  ", " ")
+			if len(n) == len(s) {
+				break
+			}
+			s = n
+		}
+		output.WriteString(s)
+	}
 	for ; ; s, choice, elem, eval = eval.Step(elem) {
 		switch s.String() {
 		case "":
 		case "\n":
 			if !skipNewline {
-				output.WriteString(s.String())
+				write(s)
 				skipNewline = true
 			}
 		default:
-			output.WriteString(s.String())
+			write(s)
 			skipNewline = false
 		}
 		if choice != nil {
