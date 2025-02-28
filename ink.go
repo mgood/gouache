@@ -124,6 +124,10 @@ var Neg UnaryOp = func(a Value) Value {
 type BinOp func(a, b Value) Value
 
 var Add BinOp = func(a, b Value) Value {
+	switch b := b.(type) {
+	case StringValue:
+		return asStringValue(a) + b
+	}
 	switch a := a.(type) {
 	case FloatValue:
 		return a + b.(FloatValue)
@@ -131,9 +135,30 @@ var Add BinOp = func(a, b Value) Value {
 		return a + b.(IntValue)
 	case ListValue:
 		return a.Add(b)
+	case StringValue:
+		return a + asStringValue(b)
+	case BoolValue:
+		return boolInt(a) + b.(IntValue)
 	default:
 		panic(fmt.Errorf("unsupported type %T", a))
 	}
+}
+
+func boolInt(b BoolValue) IntValue {
+	if b {
+		return 1
+	}
+	return 0
+}
+
+func asStringValue(v Value) StringValue {
+	if v, ok := v.(StringValue); ok {
+		return v
+	}
+	if v, ok := v.(Outputter); ok {
+		return StringValue(v.Output().String())
+	}
+	panic(fmt.Errorf("unsupported type %T", v))
 }
 
 var Has BinOp = func(a, b Value) Value {

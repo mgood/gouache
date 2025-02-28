@@ -224,6 +224,15 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, next, endEval(s)
 	case Done, End:
 		return "", nil, nil, e
+	case Out:
+		val, s := e.Stack.PopVal()
+		o := val.(Outputter).Output()
+		s, newline := s.ShouldPrependNewline()
+		if newline {
+			o = "\n" + o
+		}
+		s, next := popIfEnded(s, el.Next())
+		return o, nil, next, endEval(s)
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
