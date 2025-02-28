@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"fmt"
 	"maps"
+	"math"
 	"slices"
 	"strings"
 )
@@ -121,6 +122,20 @@ var Neg UnaryOp = func(a Value) Value {
 	}
 }
 
+func floatOp(op func(float64) float64) UnaryOp {
+	return func(a Value) Value {
+		return FloatValue(op(float64(asFloat(a))))
+	}
+}
+
+var Floor UnaryOp = floatOp(math.Floor)
+
+var Ceiling UnaryOp = floatOp(math.Ceil)
+
+var Int UnaryOp = func(a Value) Value {
+	return IntValue(a.(FloatValue))
+}
+
 type BinOp func(a, b Value) Value
 
 var Add BinOp = func(a, b Value) Value {
@@ -187,9 +202,20 @@ var Sub BinOp = func(a, b Value) Value {
 var Div BinOp = func(a, b Value) Value {
 	switch a := a.(type) {
 	case FloatValue:
-		return a / b.(FloatValue)
+		return a / asFloat(b)
 	case IntValue:
 		return a / b.(IntValue)
+	default:
+		panic("unsupported type")
+	}
+}
+
+func asFloat(v Value) FloatValue {
+	switch v := v.(type) {
+	case FloatValue:
+		return v
+	case IntValue:
+		return FloatValue(v)
 	default:
 		panic("unsupported type")
 	}
@@ -335,7 +361,8 @@ func (v VoidValue) Output() Output {
 type FloatValue float64
 
 func (f FloatValue) Output() Output {
-	s := fmt.Sprint(f)
+	// lower precision to match ink text output
+	s := fmt.Sprint(float32(f))
 	return Output(s)
 }
 
