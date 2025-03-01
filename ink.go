@@ -181,9 +181,14 @@ func asStringValue(v Value) StringValue {
 }
 
 var Has BinOp = func(a, b Value) Value {
-	al := a.(ListValue)
-	bl := b.(ListValue)
-	return boolean(al.Contains(bl))
+	switch a := a.(type) {
+	case ListValue:
+		return boolean(a.Contains(b.(ListValue)))
+	case StringValue:
+		return boolean(strings.Contains(string(a), string(asStringValue(b))))
+	default:
+		panic(fmt.Errorf("unsupported type %T", a))
+	}
 }
 
 var Hasnt BinOp = func(a, b Value) Value {
