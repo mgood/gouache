@@ -484,6 +484,11 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		b, s := pop[ListValue](s)
 		s = s.PushVal(a.Intersect(b))
 		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+	case DupTop:
+		v, s := e.Stack.PopVal()
+		s = s.PushVal(v)
+		s = s.PushVal(v)
+		return "", nil, el.Next(), EvalEvaluator{Stack: s}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
