@@ -473,6 +473,18 @@ func (l ListValue) At(index int) ListValue {
 	}
 }
 
+func (l ListValue) Updated(v Value) Value {
+	lv, ok := v.(ListValue)
+	// if it's not a list, or has its own values, return it
+	if !ok || len(lv.Items) > 0 {
+		return v
+	}
+	// if we're updating to an empty list, return empty with the previous origins
+	return ListValue{
+		Origins: maps.Clone(l.Origins),
+	}
+}
+
 func numeric(v Value) int {
 	switch v := v.(type) {
 	case IntValue:
