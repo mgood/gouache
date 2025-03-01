@@ -426,8 +426,24 @@ func (f *CallFrame) UpdateVar(name string, v Value) *CallFrame {
 		panic("uninitialized frame does not have any vars")
 	}
 	if f.locals != nil {
-		if _, ok := f.locals.Get(name); ok {
+		if prev, ok := f.locals.Get(name); ok {
+			// this is mainly to allow list values to continue tracking the origin
+			// after updating to an empty list
+			if u, ok := prev.(interface {
+				Updated(Value) Value
+			}); ok {
+				v = u.Updated(v)
+			}
 			return f.WithLocal(name, v)
+		}
+	}
+	if prev, ok := f.globals.Get(name); ok {
+		// this is mainly to allow list values to continue tracking the origin
+		// after updating to an empty list
+		if u, ok := prev.(interface {
+			Updated(Value) Value
+		}); ok {
+			v = u.Updated(v)
 		}
 	}
 	return f.WithGlobal(name, v)
