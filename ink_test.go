@@ -207,7 +207,8 @@ func Continue(t testing.TB, eval Evaluator, elem Element) (string, []Choice, Eva
 	skipNewline := true
 	var choice *Choice
 	t.Logf("%T %s", eval, elementString(elem))
-	for ; ; s, choice, elem, eval = eval.Step(elem) {
+	for {
+		s, choice, elem, eval = eval.Step(elem)
 		t.Logf("%T %s", eval, elementString(elem))
 		switch s.String() {
 		case "":

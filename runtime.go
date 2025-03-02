@@ -32,11 +32,40 @@ type Evaluator interface {
 	Step(Element) (Output, *Choice, Element, Evaluator)
 }
 
+type StepEvaluator struct {
+	Stack   *CallFrame
+	Stepper Stepper
+}
+
+func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
+	switch el.Node().(type) {
+	case Done:
+		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
+	case End:
+		// FIXME end is supposed to unwind the full stack
+		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
+	}
+	out, choice, elem, stack, stepper := e.Stepper.Step(e.Stack, el)
+	if elem == nil {
+		stack, elem, stepper = stack.PopFrame()
+		if stepper == nil {
+			stepper = BaseEvaluator{}
+		}
+		stack = stack.PushVal(VoidValue{})
+	}
+	return out, choice, elem, StepEvaluator{Stack: stack, Stepper: stepper}
+}
+
+type Stepper interface {
+	Step(*CallFrame, Element) (Output, *Choice, Element, *CallFrame, Stepper)
+}
+
 func Init(root Element, listDefs ListDefs) Evaluator {
-	var eval Evaluator = BaseEvaluator{
+	var eval Evaluator = StepEvaluator{
 		Stack: &CallFrame{
 			listDefs: listDefs,
 		},
+		Stepper: BaseEvaluator{},
 	}
 	if g := root.Find("global decl"); g != nil {
 		var s Output
@@ -66,58 +95,42 @@ func Init(root Element, listDefs ListDefs) Evaluator {
 // CountStartOnly
 
 type BaseEvaluator struct {
-	Stack *CallFrame
 }
 
-func popIfEnded(s *CallFrame, next Element) (*CallFrame, Element) {
-	if next != nil {
-		return s, next
-	}
-	s, next = s.PopFrame()
-	s = s.PushVal(VoidValue{})
-	return s, next
-}
-
-func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
-	e.Stack = e.Stack.Visit(el.Address())
+func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
+	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
-		s, newline := e.Stack.ShouldPrependNewline()
+		stack, newline := stack.ShouldPrependNewline()
 		if newline {
 			n = "\n" + n
 		}
-		s, next := popIfEnded(s, el.Next())
-		return Output(n), nil, next, endEval(s)
+		return Output(n), nil, el.Next(), stack, e
 	case Newline:
-		s, emit := e.Stack.ShouldEmitNewline()
+		stack, emit := stack.ShouldEmitNewline()
 		var o Output
 		if emit {
 			o = Output("\n")
 		}
-		s, next := popIfEnded(s, el.Next())
-		return o, nil, next, endEval(s)
+		return o, nil, el.Next(), stack, e
 	case BeginEval:
-		s := e.Stack.IncEvalDepth(1)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		return "", nil, el.Next(), stack, EvalEvaluator{Prev: e}
 	case SetTemp:
-		val, s := e.Stack.PopVal()
-		s = s.WithLocal(n.Name, val)
-		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		val, stack := stack.PopVal()
+		stack = stack.WithLocal(n.Name, val)
+		return "", nil, el.Next(), stack, e
 	case Pop:
-		_, s := e.Stack.PopVal()
-		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		_, stack = stack.PopVal()
+		return "", nil, el.Next(), stack, e
 	case DupTop:
-		v, s := e.Stack.PopVal()
-		s = s.PushVal(v)
-		s = s.PushVal(v)
-		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		v, stack := stack.PopVal()
+		stack = stack.PushVal(v)
+		stack = stack.PushVal(v)
+		return "", nil, el.Next(), stack, e
 	case Divert:
 		addr := n.Dest
 		if n.Var {
-			addrVar, ok := e.Stack.GetVar(string(addr))
+			addrVar, ok := stack.GetVar(string(addr))
 			if !ok {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
@@ -125,43 +138,42 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		}
 		if n.Conditional {
 			var cond Value
-			cond, e.Stack = e.Stack.PopVal()
+			cond, stack = stack.PopVal()
 			if !truthy(cond) {
-				return "", nil, el.Next(), e
+				return "", nil, el.Next(), stack, e
 			}
 		}
 		if n.incTurnCount {
-			e.Stack = e.Stack.IncTurnCount()
+			stack = stack.IncTurnCount()
 		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
 		}
-		return "", nil, dest, e
+		return "", nil, dest, stack, e
 	case BeginTag:
-		return "", nil, el.Next(), TagEvaluator{Stack: e.Stack}
+		return "", nil, el.Next(), stack, TagEvaluator{Prev: e}
 	case ChoicePoint:
 		var label StringValue
 		enabled := true
-		s := e.Stack
 		if n.Flags&HasCondition != 0 {
 			var cond Value
-			cond, s = s.PopVal()
+			cond, stack = stack.PopVal()
 			enabled = truthy(cond)
 		}
 		if n.Flags&HasChoiceOnlyContent != 0 {
 			var x StringValue
-			x, s = pop[StringValue](s)
+			x, stack = pop[StringValue](stack)
 			label = x
 		}
 		if n.Flags&HasStartContent != 0 {
 			var x StringValue
-			x, s = pop[StringValue](s)
+			x, stack = pop[StringValue](stack)
 			label = x + label
 		}
 		if n.Flags&OnceOnly != 0 {
 			addr, _ := el.Find(n.Dest).Address()
-			visits := e.Stack.VisitCount(addr)
+			visits := stack.VisitCount(addr)
 			if visits != 0 {
 				enabled = false
 			}
@@ -177,25 +189,22 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 				IsInvisibleDefault: isInvisibleDefault,
 			}
 		}
-		s, next := popIfEnded(s, el.Next())
-		return "", choice, next, endEval(s)
+		return "", choice, el.Next(), stack, e
 	case SetVar:
-		val, s := e.Stack.PopVal()
+		val, stack := stack.PopVal()
 		if n.Reassign {
-			s = s.UpdateVar(n.Name, val)
+			stack = stack.UpdateVar(n.Name, val)
 		} else {
-			s = s.WithGlobal(n.Name, val)
+			stack = stack.WithGlobal(n.Name, val)
 		}
-		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		return "", nil, el.Next(), stack, e
 	case FuncReturn:
-		s, ret := e.Stack.PopFrame()
-		return "", nil, ret, endEval(s)
+		stack, ret, eval := stack.PopFrame()
+		return "", nil, ret, stack, eval
 	case TunnelCall:
-		s := e.Stack.PushFrame(el.Next(), false)
 		addr := n.Dest
 		if n.Var {
-			addrVar, ok := e.Stack.GetVar(string(addr))
+			addrVar, ok := stack.GetVar(string(addr))
 			if !ok {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
@@ -205,42 +214,38 @@ func (e BaseEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		if dest == nil {
 			panic(fmt.Errorf("tunnel call target %q not found", n.Dest))
 		}
-		return "", nil, dest, BaseEvaluator{Stack: s}
+		stack = stack.PushFrame(el.Next(), e, false)
+		return "", nil, dest, stack, e
 	case ThreadStart:
-		s := e.Stack.PushFrame(el.Next().Next(), false)
-		return "", nil, el.Next(), BaseEvaluator{Stack: s}
+		stack = stack.PushFrame(el.Next().Next(), e, false)
+		return "", nil, el.Next(), stack, e
 	case TunnelReturn:
-		rv, s := e.Stack.PopVal()
-		s, ret := s.PopFrame()
+		rv, stack := stack.PopVal()
+		stack, ret, eval := stack.PopFrame()
 		if ret == nil {
 			panic(fmt.Errorf("Found tunnel onwards ->-> but no tunnel to return to"))
 		}
 		switch rv := rv.(type) {
 		case VoidValue:
-			return "", nil, ret, endEval(s)
+			return "", nil, ret, stack, eval
 		case DivertTargetValue:
-			return "", nil, el.Find(rv.Dest), endEval(s)
+			return "", nil, el.Find(rv.Dest), stack, eval
 		default:
 			panic(fmt.Errorf("unexpected tunnel return value %T", rv))
 		}
 	case NoOp:
-		s, next := popIfEnded(e.Stack, el.Next())
-		return "", nil, next, endEval(s)
+		return "", nil, el.Next(), stack, e
 	case IntValue, FloatValue:
 		// raw int and float outside of an eval block are ignored
-		s, next := popIfEnded(e.Stack, el.Next())
-		return "", nil, next, endEval(s)
-	case Done, End:
-		return "", nil, nil, e
+		return "", nil, el.Next(), stack, e
 	case Out:
-		val, s := e.Stack.PopVal()
+		val, stack := stack.PopVal()
 		o := val.(Outputter).Output()
-		s, newline := s.ShouldPrependNewline()
+		stack, newline := stack.ShouldPrependNewline()
 		if newline {
 			o = "\n" + o
 		}
-		s, next := popIfEnded(s, el.Next())
-		return o, nil, next, endEval(s)
+		return o, nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
@@ -273,86 +278,61 @@ func pop[T any](s *CallFrame) (T, *CallFrame) {
 }
 
 type EvalEvaluator struct {
-	Stack *CallFrame
+	Prev Stepper
 }
 
-func endEval(s *CallFrame) Evaluator {
-	switch {
-	case s.stringDepth > 0:
-		return StringEvaluator{Stack: s}
-	case s.evalDepth > 0:
-		return EvalEvaluator{Stack: s}
-	default:
-		return BaseEvaluator{Stack: s}
-	}
-}
-
-func (e EvalEvaluator) endEval() Evaluator {
-	return endEval(e.Stack.IncEvalDepth(-1))
-}
-
-func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
-	e.Stack = e.Stack.Visit(el.Address())
+func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
+	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case BeginStringEval:
-		s := e.Stack.IncStringDepth(1)
-		return "", nil, el.Next(), StringEvaluator{Stack: s}
+		return "", nil, el.Next(), stack, StringEvaluator{Prev: e}
 	case EndEval:
-		next := el.Next()
-		if next != nil {
-			// if we have another node, we want to decrement the evalDepth and
-			// continue
-			return "", nil, next, e.endEval()
-		}
-		// however, if we're at the end of the container, popping the frame will
-		// reset the evalDepth to the prior frame, so we don't want to decrement it
-		s, next := e.Stack.PopFrame()
-		s = s.PushVal(VoidValue{})
-		return "", nil, next, endEval(s)
+		return "", nil, el.Next(), stack, e.Prev
 	case GetVar:
-		val, ok := e.Stack.GetVar(n.Name)
+		val, ok := stack.GetVar(n.Name)
 		if !ok {
 			panic(fmt.Errorf("variable %q not found", n.Name))
 		}
-		s := e.Stack.PushVal(val)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(val)
+		return "", nil, el.Next(), stack, e
 	case SetVar:
-		val, s := e.Stack.PopVal()
+		var val Value
+		val, stack = stack.PopVal()
 		if n.Reassign {
-			s = s.UpdateVar(n.Name, val)
+			stack = stack.UpdateVar(n.Name, val)
 		} else {
-			s = s.WithGlobal(n.Name, val)
+			stack = stack.WithGlobal(n.Name, val)
 		}
-		s, next := popIfEnded(s, el.Next())
-		return "", nil, next, endEval(s)
+		return "", nil, el.Next(), stack, e
 	case SetTemp:
-		val, s := e.Stack.PopVal()
+		var val Value
+		val, stack = stack.PopVal()
 		// TODO use "re" reassign flag to check that it's already
 		// been set?
-		s = s.WithLocal(n.Name, val)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.WithLocal(n.Name, val)
+		return "", nil, el.Next(), stack, e
 	case DivertTargetValue, IntValue, FloatValue, BoolValue, ListValue:
-		s := e.Stack.PushVal(n)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(n)
+		return "", nil, el.Next(), stack, e
 	case Text:
-		s := e.Stack.PushVal(StringValue(n))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(StringValue(n))
+		return "", nil, el.Next(), stack, e
 	case BinOp:
-		b, s := e.Stack.PopVal()
-		a, s := s.PopVal()
-		s = s.PushVal(n(a, b))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		b, stack := stack.PopVal()
+		a, stack := stack.PopVal()
+		stack = stack.PushVal(n(a, b))
+		return "", nil, el.Next(), stack, e
 	case UnaryOp:
-		a, s := e.Stack.PopVal()
-		s = s.PushVal(n(a))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		a, stack := stack.PopVal()
+		stack = stack.PushVal(n(a))
+		return "", nil, el.Next(), stack, e
 	case Pop:
-		_, s := e.Stack.PopVal()
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		_, stack = stack.PopVal()
+		return "", nil, el.Next(), stack, e
 	case Divert:
 		addr := n.Dest
 		if n.Var {
-			addrVar, ok := e.Stack.GetVar(string(addr))
+			addrVar, ok := stack.GetVar(string(addr))
 			if !ok {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
@@ -360,24 +340,24 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		}
 		if n.Conditional {
 			var cond Value
-			cond, e.Stack = e.Stack.PopVal()
+			cond, stack = stack.PopVal()
 			if !truthy(cond) {
-				return "", nil, el.Next(), e
+				return "", nil, el.Next(), stack, e
 			}
 		}
 		if n.incTurnCount {
-			e.Stack = e.Stack.IncTurnCount()
+			stack = stack.IncTurnCount()
 		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
 		}
-		return "", nil, dest, e
+		return "", nil, dest, stack, e
 	case FuncCall:
-		s := e.Stack.PushFrame(el.Next(), true)
+		stack = stack.PushFrame(el.Next(), e, true)
 		addr := n.Dest
 		if n.Var {
-			addrVar, ok := e.Stack.GetVar(string(addr))
+			addrVar, ok := stack.GetVar(string(addr))
 			if !ok {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
@@ -387,108 +367,106 @@ func (e EvalEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		if dest == nil {
 			panic(fmt.Errorf("function call target %q not found", n.Dest))
 		}
-		return "", nil, dest, BaseEvaluator{Stack: s}
+		return "", nil, dest, stack, BaseEvaluator{}
 	case TurnCounter:
-		turn := IntValue(e.Stack.turnCount)
-		s := e.Stack.PushVal(turn)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		turn := IntValue(stack.turnCount)
+		stack = stack.PushVal(turn)
+		return "", nil, el.Next(), stack, e
 	case GetVisitCount:
 		base, _ := el.Address()
 		addr := resolve(base, Address(n.Container))
-		count := IntValue(e.Stack.VisitCount(addr))
-		s := e.Stack.PushVal(count)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		count := IntValue(stack.VisitCount(addr))
+		stack = stack.PushVal(count)
+		return "", nil, el.Next(), stack, e
 	case VisitCounter:
 		base, _ := el.Address()
 		// addr := resolve(base, Address(n.Container))
 		addr := base
-		count := IntValue(e.Stack.VisitCount(addr))
-		s := e.Stack.PushVal(count)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		count := IntValue(stack.VisitCount(addr))
+		stack = stack.PushVal(count)
+		return "", nil, el.Next(), stack, e
 	case TurnsSince:
-		dv, s := pop[DivertTargetValue](e.Stack)
+		dv, stack := pop[DivertTargetValue](stack)
 		base, _ := el.Address()
 		addr := resolve(base, dv.Dest)
-		count := IntValue(e.Stack.TurnsSince(addr))
-		s = s.PushVal(count)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
-	case Done, End:
-		return "", nil, nil, BaseEvaluator{Stack: e.Stack}
+		count := IntValue(stack.TurnsSince(addr))
+		stack = stack.PushVal(count)
+		return "", nil, el.Next(), stack, e
 	case Out:
-		val, s := e.Stack.PopVal()
+		val, stack := stack.PopVal()
 		o := val.(Outputter).Output()
-		s, newline := s.ShouldPrependNewline()
+		stack, newline := stack.ShouldPrependNewline()
 		if newline {
 			o = "\n" + o
 		}
-		return o, nil, el.Next(), EvalEvaluator{Stack: s}
+		return o, nil, el.Next(), stack, e
 	case Void:
-		s := e.Stack.PushVal(VoidValue{})
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(VoidValue{})
+		return "", nil, el.Next(), stack, e
 	case VarRef:
-		s := e.Stack.PushVarRef(n.Name)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVarRef(n.Name)
+		return "", nil, el.Next(), stack, e
 	case ListInt:
-		val, s := e.Stack.PopVal()
-		origin, s := s.PopVal()
-		v := s.ListInt(string(origin.(StringValue)), int(val.(IntValue)))
-		s = s.PushVal(v)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		val, stack := stack.PopVal()
+		origin, stack := stack.PopVal()
+		v := stack.ListInt(string(origin.(StringValue)), int(val.(IntValue)))
+		stack = stack.PushVal(v)
+		return "", nil, el.Next(), stack, e
 	case ListValueFunc:
-		val, s := pop[ListValue](e.Stack)
+		val, stack := pop[ListValue](stack)
 		if len(val.Items) == 0 {
-			s = s.PushVal(IntValue(0))
+			stack = stack.PushVal(IntValue(0))
 		} else {
-			s = s.PushVal(IntValue(val.Items[len(val.Items)-1].Value))
+			stack = stack.PushVal(IntValue(val.Items[len(val.Items)-1].Value))
 		}
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		return "", nil, el.Next(), stack, e
 	case ListCountFunc:
-		val, s := pop[ListValue](e.Stack)
+		val, stack := pop[ListValue](stack)
 		count := IntValue(len(val.Items))
-		s = s.PushVal(count)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(count)
+		return "", nil, el.Next(), stack, e
 	case ListMinFunc:
-		val, s := pop[ListValue](e.Stack)
+		val, stack := pop[ListValue](stack)
 		if len(val.Items) == 0 {
-			s = s.PushVal(val)
+			stack = stack.PushVal(val)
 		} else {
-			s = s.PushVal(val.At(0))
+			stack = stack.PushVal(val.At(0))
 		}
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		return "", nil, el.Next(), stack, e
 	case ListMaxFunc:
-		val, s := pop[ListValue](e.Stack)
+		val, stack := pop[ListValue](stack)
 		if len(val.Items) == 0 {
-			s = s.PushVal(val)
+			stack = stack.PushVal(val)
 		} else {
-			s = s.PushVal(val.At(len(val.Items) - 1))
+			stack = stack.PushVal(val.At(len(val.Items) - 1))
 		}
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		return "", nil, el.Next(), stack, e
 	case ListAllFunc:
-		val, s := pop[ListValue](e.Stack)
-		v := s.ListAll(val)
-		s = s.PushVal(v)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		val, stack := pop[ListValue](stack)
+		v := stack.ListAll(val)
+		stack = stack.PushVal(v)
+		return "", nil, el.Next(), stack, e
 	case ListInvertFunc:
-		val, s := pop[ListValue](e.Stack)
-		v := s.ListAll(val)
-		s = s.PushVal(v.Sub(val))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		val, stack := pop[ListValue](stack)
+		v := stack.ListAll(val)
+		stack = stack.PushVal(v.Sub(val))
+		return "", nil, el.Next(), stack, e
 	case ListRangeFunc:
-		end, s := e.Stack.PopVal()
-		start, s := s.PopVal()
-		val, s := pop[ListValue](s)
-		s = s.PushVal(val.Range(start, end))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		end, stack := stack.PopVal()
+		start, stack := stack.PopVal()
+		val, stack := pop[ListValue](stack)
+		stack = stack.PushVal(val.Range(start, end))
+		return "", nil, el.Next(), stack, e
 	case ListIntersectFunc:
-		a, s := pop[ListValue](e.Stack)
-		b, s := pop[ListValue](s)
-		s = s.PushVal(a.Intersect(b))
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		a, stack := pop[ListValue](stack)
+		b, stack := pop[ListValue](stack)
+		stack = stack.PushVal(a.Intersect(b))
+		return "", nil, el.Next(), stack, e
 	case DupTop:
-		v, s := e.Stack.PopVal()
-		s = s.PushVal(v)
-		s = s.PushVal(v)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		v, stack := stack.PopVal()
+		stack = stack.PushVal(v)
+		stack = stack.PushVal(v)
+		return "", nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
@@ -506,28 +484,26 @@ func resolve(base, addr Address) Address {
 }
 
 type StringEvaluator struct {
-	Stack   *CallFrame
-	wrapped Evaluator
-	output  string
+	output string
+	Prev   Stepper
 }
 
-func (e StringEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
-	e.Stack = e.Stack.Visit(el.Address())
+func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
+	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
-		return "", nil, el.Next(), e.pushText(string(n))
+		return "", nil, el.Next(), stack, e.pushText(string(n))
 	case NoOp:
-		return "", nil, el.Next(), e
+		return "", nil, el.Next(), stack, e
 	case BeginEval:
-		s := e.Stack.IncEvalDepth(1)
-		return "", nil, el.Next(), StringWrappedEvaluator{
+		return "", nil, el.Next(), stack, StringWrappedEvaluator{
 			output:  e.output,
-			wrapped: EvalEvaluator{Stack: s},
+			wrapped: EvalEvaluator{Prev: e},
 		}
 	case Divert:
 		addr := n.Dest
 		if n.Var {
-			addrVar, ok := e.Stack.GetVar(string(addr))
+			addrVar, ok := stack.GetVar(string(addr))
 			if !ok {
 				panic(fmt.Errorf("address variable %q not found", addr))
 			}
@@ -535,68 +511,71 @@ func (e StringEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) 
 		}
 		if n.Conditional {
 			var cond IntValue
-			cond, e.Stack = pop[IntValue](e.Stack)
+			cond, stack = pop[IntValue](stack)
 			if cond == 0 {
-				return "", nil, el.Next(), e
+				return "", nil, el.Next(), stack, e
 			}
 		}
 		dest := el.Find(addr)
 		if dest == nil {
 			panic(fmt.Errorf("divert target %q not found", n.Dest))
 		}
-		return "", nil, dest, e
+		return "", nil, dest, stack, e
 	case EndStringEval:
-		s := e.Stack.PushVal(StringValue(e.output))
-		// XXX this passes I022, but could it get confused depending on the times
-		// we're switching between string and eval mode
-		s = s.IncStringDepth(-1)
-		return "", nil, el.Next(), EvalEvaluator{Stack: s}
+		stack = stack.PushVal(StringValue(e.output))
+		return "", nil, el.Next(), stack, e.Prev
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
 }
 
 func (e StringEvaluator) pushText(s string) StringEvaluator {
-	return StringEvaluator{
-		Stack:  e.Stack,
-		output: e.output + s,
-	}
+	e.output += s
+	return e
 }
 
 type StringWrappedEvaluator struct {
-	wrapped Evaluator
+	wrapped Stepper
 	output  string
+	depth   int
 }
 
-func (e StringWrappedEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
-	out, choice, next, eval := e.wrapped.Step(el)
-	if out.String() != "" {
-		e.output += out.String()
+func (e StringWrappedEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
+	switch el.Node().(type) {
+	case BeginEval:
+		e.depth++
+	case EndEval:
+		e.depth--
 	}
-	if se, ok := eval.(StringEvaluator); ok {
-		return "", choice, next, StringEvaluator{
-			Stack:  se.Stack,
-			output: e.output,
-		}
+	out, choice, next, stack, eval := e.wrapped.Step(stack, el)
+	if s := out.String(); s != "" {
+		e.output += s
 	}
-	return "", choice, next, StringWrappedEvaluator{
-		wrapped: eval,
-		output:  e.output,
+	if e.depth < 0 {
+		// once eval stack ends, we expect to be back at the prior string evaluator
+		// so we set its accumulated output and then return there
+		streval := eval.(StringEvaluator)
+		streval.output = e.output
+		eval = streval
+	} else {
+		e.wrapped = eval
+		eval = e
 	}
+	return "", choice, next, stack, eval
 }
 
 type TagEvaluator struct {
-	Stack *CallFrame
+	Prev Stepper
 }
 
-func (e TagEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
+func (e TagEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
 	switch n := el.Node().(type) {
 	case Text:
 		// TODO store tags on the previous output?
 		// or maybe buffer tags until we reach a Newline{}
-		return "", nil, el.Next(), e
+		return "", nil, el.Next(), stack, e
 	case EndTag:
-		return "", nil, el.Next(), BaseEvaluator{Stack: e.Stack}
+		return "", nil, el.Next(), stack, e.Prev
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
