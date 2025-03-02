@@ -534,6 +534,8 @@ func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, El
 	case EndStringEval:
 		stack = stack.PushVal(StringValue(e.output))
 		return "", nil, el.Next(), stack, e.Prev
+	case BeginTag:
+		return "", nil, el.Next(), stack, TagEvaluator{Prev: e}
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
