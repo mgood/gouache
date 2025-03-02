@@ -47,9 +47,19 @@ func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	}
 	out, choice, elem, stack, stepper := e.Stepper.Step(e.Stack, el)
 	if elem == nil {
-		stack, elem, stepper = stack.PopFrame()
-		if stepper == nil {
-			stepper = BaseEvaluator{}
+		var nextStepper Stepper
+		stack, elem, nextStepper = stack.PopFrame()
+		if nextStepper == nil {
+			nextStepper = BaseEvaluator{}
+		}
+		// If we were capturing the output, restore capturing
+		// of the output to the previous frame.
+		// Maybe the output capture should go into the stack instead?
+		if sw, ok := stepper.(StringWrappedEvaluator); ok {
+			sw.wrapped = nextStepper
+			stepper = sw
+		} else {
+			stepper = nextStepper
 		}
 		stack = stack.PushVal(VoidValue{})
 	}
@@ -354,7 +364,6 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		}
 		return "", nil, dest, stack, e
 	case FuncCall:
-		stack = stack.PushFrame(el.Next(), e, true)
 		addr := n.Dest
 		if n.Var {
 			addrVar, ok := stack.GetVar(string(addr))
@@ -367,6 +376,7 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		if dest == nil {
 			panic(fmt.Errorf("function call target %q not found", n.Dest))
 		}
+		stack = stack.PushFrame(el.Next(), e, true)
 		return "", nil, dest, stack, BaseEvaluator{}
 	case TurnCounter:
 		turn := IntValue(stack.turnCount)
