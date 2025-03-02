@@ -321,6 +321,15 @@ func (f *CallFrame) IncTurnCount() *CallFrame {
 }
 
 func (f *CallFrame) setRef(ref VarRef, v Value) *CallFrame {
+	// if this is a nested reference, we need to find the deepest location to
+	// update
+	for {
+		nestedRef, ok := f.getRef(ref).(VarRef)
+		if !ok {
+			break
+		}
+		ref = nestedRef
+	}
 	if ref.ContentIndex == 0 {
 		return f.withGlobals(f.globals.With(ref.Name, v))
 	}
@@ -448,17 +457,23 @@ func (f *CallFrame) UpdateVar(name string, v Value) *CallFrame {
 	return f.WithGlobal(name, v)
 }
 
+func (f *CallFrame) resolveRef(v Value) Value {
+	for {
+		r, ok := v.(VarRef)
+		if !ok {
+			return v
+		}
+		v = f.getRef(r)
+	}
+}
+
 func (f *CallFrame) GetVar(name string) (Value, bool) {
 	if f == nil {
 		return nil, false
 	}
 	if f.locals != nil {
 		if v, ok := f.locals.Get(name); ok {
-			r, ok := v.(VarRef)
-			if !ok {
-				return v, true
-			}
-			return f.getRef(r), true
+			return f.resolveRef(v), true
 		}
 	}
 	if f.globals != nil {
