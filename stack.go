@@ -201,11 +201,10 @@ type CallFrame struct {
 
 	locals       *Vars
 	callDepth    int
-	evalDepth    int
-	stringDepth  int
 	newlineState newlineState
 	prev         *CallFrame
 	returnTo     Element
+	retStep      Stepper
 }
 
 func (f *CallFrame) ShouldEmitNewline() (*CallFrame, bool) {
@@ -356,13 +355,14 @@ func (f *CallFrame) PushVarRef(name string) *CallFrame {
 	panic(fmt.Errorf("variable %s not found", name))
 }
 
-func (f *CallFrame) PushFrame(returnTo Element, isFunction bool) *CallFrame {
+func (f *CallFrame) PushFrame(returnTo Element, retStep Stepper, isFunction bool) *CallFrame {
 	if f == nil {
 		return &CallFrame{}
 	}
 	r := &CallFrame{
 		prev:      f,
 		returnTo:  returnTo,
+		retStep:   retStep,
 		visits:    f.visits,
 		turnCount: f.turnCount,
 		globals:   f.globals,
@@ -376,7 +376,7 @@ func (f *CallFrame) PushFrame(returnTo Element, isFunction bool) *CallFrame {
 	return r
 }
 
-func (f *CallFrame) PopFrame() (*CallFrame, Element) {
+func (f *CallFrame) PopFrame() (*CallFrame, Element, Stepper) {
 	p := f.prev
 	if p == nil {
 		p = &CallFrame{}
@@ -388,13 +388,12 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element) {
 		evalStack: f.evalStack,
 		listDefs:  f.listDefs,
 
-		callDepth:   p.callDepth,
-		locals:      p.locals,
-		evalDepth:   p.evalDepth,
-		stringDepth: p.stringDepth,
-		prev:        p.prev,
-		returnTo:    p.returnTo,
-	}, f.returnTo
+		callDepth: p.callDepth,
+		locals:    p.locals,
+		prev:      p.prev,
+		returnTo:  p.returnTo,
+		retStep:   p.retStep,
+	}, f.returnTo, f.retStep
 }
 
 func (f *CallFrame) WithGlobal(name string, value Value) *CallFrame {
@@ -494,23 +493,5 @@ func (f *CallFrame) updateEvalStack(fn func(*EvalFrame) *EvalFrame) *CallFrame {
 	}
 	r := *f
 	r.evalStack = fn(f.evalStack)
-	return &r
-}
-
-func (f *CallFrame) IncEvalDepth(by int) *CallFrame {
-	if f == nil {
-		return &CallFrame{evalDepth: by}
-	}
-	r := *f
-	r.evalDepth += by
-	return &r
-}
-
-func (f *CallFrame) IncStringDepth(by int) *CallFrame {
-	if f == nil {
-		return &CallFrame{stringDepth: by}
-	}
-	r := *f
-	r.stringDepth += by
 	return &r
 }
