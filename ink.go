@@ -121,8 +121,10 @@ var Neg UnaryOp = func(a Value) Value {
 		return -a
 	case FloatValue:
 		return -a
+	case BoolValue:
+		return -boolInt(a)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
@@ -143,13 +145,17 @@ var Int UnaryOp = func(a Value) Value {
 type BinOp func(a, b Value) Value
 
 var Add BinOp = func(a, b Value) Value {
-	switch b := b.(type) {
+	switch bt := b.(type) {
 	case StringValue:
-		return asStringValue(a) + b
+		a = asStringValue(a)
+	case FloatValue:
+		a = asFloat(a)
+	case BoolValue:
+		b = boolInt(bt)
 	}
 	switch a := a.(type) {
 	case FloatValue:
-		return a + b.(FloatValue)
+		return a + asFloat(b)
 	case IntValue:
 		return a + b.(IntValue)
 	case ListValue:
@@ -196,9 +202,15 @@ var Hasnt BinOp = func(a, b Value) Value {
 }
 
 var Sub BinOp = func(a, b Value) Value {
+	switch bt := b.(type) {
+	case FloatValue:
+		a = asFloat(a)
+	case BoolValue:
+		b = boolInt(bt)
+	}
 	switch a := a.(type) {
 	case FloatValue:
-		return a - b.(FloatValue)
+		return a - asFloat(b)
 	case IntValue:
 		return a - b.(IntValue)
 	case ListValue:
@@ -206,18 +218,26 @@ var Sub BinOp = func(a, b Value) Value {
 	case BoolValue:
 		return boolInt(a) - b.(IntValue)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
 var Div BinOp = func(a, b Value) Value {
+	switch bt := b.(type) {
+	case FloatValue:
+		a = asFloat(a)
+	case BoolValue:
+		b = boolInt(bt)
+	}
 	switch a := a.(type) {
 	case FloatValue:
 		return a / asFloat(b)
 	case IntValue:
 		return a / b.(IntValue)
+	case BoolValue:
+		return boolInt(a) / b.(IntValue)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
@@ -227,28 +247,48 @@ func asFloat(v Value) FloatValue {
 		return v
 	case IntValue:
 		return FloatValue(v)
+	case BoolValue:
+		return FloatValue(boolInt(v))
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", v))
 	}
 }
 
 var Mul BinOp = func(a, b Value) Value {
+	switch bt := b.(type) {
+	case FloatValue:
+		a = asFloat(a)
+	case BoolValue:
+		b = boolInt(bt)
+	}
 	switch a := a.(type) {
 	case FloatValue:
-		return a * b.(FloatValue)
+		return a * asFloat(b)
 	case IntValue:
 		return a * b.(IntValue)
+	case BoolValue:
+		return boolInt(a) * b.(IntValue)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
 var Mod BinOp = func(a, b Value) Value {
+	switch bt := b.(type) {
+	case FloatValue:
+		a = asFloat(a)
+	case BoolValue:
+		b = boolInt(bt)
+	}
 	switch a := a.(type) {
+	case FloatValue:
+		return FloatValue(math.Mod(float64(a), float64(asFloat(b))))
 	case IntValue:
 		return a % b.(IntValue)
+	case BoolValue:
+		return boolInt(a) % b.(IntValue)
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
@@ -257,6 +297,12 @@ var Eq BinOp = func(a, b Value) Value {
 		Eq(b Value) bool
 	}); ok {
 		return boolean(eq.Eq(b))
+	}
+	// if one of the value is a string, try comparing as strings
+	if _, ok := a.(StringValue); ok {
+		b = asStringValue(b)
+	} else if _, ok := b.(StringValue); ok {
+		a = asStringValue(a)
 	}
 	return boolean(a == b)
 }
@@ -285,7 +331,7 @@ var Lt BinOp = func(a, b Value) Value {
 	case IntValue:
 		return boolean(a < b.(IntValue))
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", a))
 	}
 }
 
@@ -571,7 +617,7 @@ func (l ListValue) Add(v Value) ListValue {
 	case IntValue:
 		return l.inc(int(v))
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", v))
 	}
 }
 
@@ -582,7 +628,7 @@ func (l ListValue) Sub(v Value) ListValue {
 	case IntValue:
 		return l.inc(-int(v))
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", v))
 	}
 }
 
@@ -671,7 +717,7 @@ func truthy(v Value) bool {
 	case ListValue:
 		return len(v.Items) > 0
 	default:
-		panic("unsupported type")
+		panic(fmt.Errorf("unsupported type %T", v))
 	}
 }
 

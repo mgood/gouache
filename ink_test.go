@@ -272,6 +272,7 @@ func TestSamples(t *testing.T) {
 		"global",
 		"if-else",
 		"math",
+		"math-type-coercion",
 		"list-basics",
 		"pop",
 		"random",
