@@ -145,9 +145,14 @@ var Int UnaryOp = func(a Value) Value {
 type BinOp func(a, b Value) Value
 
 var Add BinOp = func(a, b Value) Value {
+	// if "a" is a string, this takes precedence over numeric conversions
+	switch a := a.(type) {
+	case StringValue:
+		return a + asStringValue(b)
+	}
 	switch bt := b.(type) {
 	case StringValue:
-		a = asStringValue(a)
+		return asStringValue(a) + bt
 	case FloatValue:
 		a = asFloat(a)
 	case BoolValue:
@@ -160,8 +165,6 @@ var Add BinOp = func(a, b Value) Value {
 		return a + b.(IntValue)
 	case ListValue:
 		return a.Add(b)
-	case StringValue:
-		return a + asStringValue(b)
 	case BoolValue:
 		return boolInt(a) + b.(IntValue)
 	default:
