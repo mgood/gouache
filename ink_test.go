@@ -6,6 +6,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/mgood/gouache/glue"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -19,8 +20,11 @@ func TestSimpleTextOutput(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, _, _ := Continue(t, Init(root, nil), root)
-	assert.Equal(t, "Once upon a time...\n", output)
+	var b strings.Builder
+	w := glue.NewWriter(&b)
+	Continue(t, w, Init(root, nil), root)
+	w.WriteEnd()
+	assert.Equal(t, "Once upon a time...\n", b.String())
 }
 
 func TestSplitAddress(t *testing.T) {
@@ -173,16 +177,21 @@ func TestSingleChoice(t *testing.T) {
 			Done{},
 		},
 	}.First()
-	output, choices, eval := Continue(t, Init(root, nil), root)
-	assert.Equal(t, "Once upon a time...\n", output)
+	var b strings.Builder
+	w := glue.NewWriter(&b)
+	choices, eval := Continue(t, w, Init(root, nil), root)
+	w.WriteEnd()
+	assert.Equal(t, "Once upon a time...\n", b.String())
 	choiceNames := make([]string, len(choices))
 	for i, choice := range choices {
 		choiceNames[i] = choice.Label
 	}
 	assert.Equal(t, []string{"choice"}, choiceNames)
 
-	output, choices, eval = Continue(t, eval, choices[0].Dest)
-	assert.Equal(t, "The end.\n", output)
+	b.Reset()
+	choices, eval = Continue(t, w, eval, choices[0].Dest)
+	w.WriteEnd()
+	assert.Equal(t, "The end.\n", b.String())
 	assert.Len(t, choices, 0)
 }
 
@@ -198,29 +207,16 @@ func elementString(elem Element) string {
 	return b.String()
 }
 
-func Continue(t testing.TB, eval Evaluator, elem Element) (string, []Choice, Evaluator) {
+func Continue(t testing.TB, output glue.StringWriter, eval Evaluator, elem Element) ([]Choice, Evaluator) {
 	var choices []Choice
 	var defaultChoice *Choice
-	// TODO more general pattern for collecting output that allows access to stuff like tags
-	var output strings.Builder
 	var s Output
-	skipNewline := true
 	var choice *Choice
 	t.Logf("%T %s", eval, elementString(elem))
 	for {
 		s, choice, elem, eval = eval.Step(elem)
 		t.Logf("%T %s", eval, elementString(elem))
-		switch s.String() {
-		case "":
-		case "\n":
-			if !skipNewline {
-				output.WriteString(s.String())
-				skipNewline = true
-			}
-		default:
-			output.WriteString(s.String())
-			skipNewline = false
-		}
+		output.WriteString(s.String())
 		if choice != nil {
 			if choice.IsInvisibleDefault {
 				defaultChoice = choice
@@ -243,7 +239,7 @@ func Continue(t testing.TB, eval Evaluator, elem Element) (string, []Choice, Eva
 		}
 		break
 	}
-	return output.String(), choices, eval
+	return choices, eval
 }
 
 func load(t testing.TB, fn string) (Element, ListDefs) {
@@ -263,6 +259,10 @@ func readfile(t *testing.T, fn string) string {
 	return string(b)
 }
 
+type stringWriteFunc func(string) (int, error)
+
+func (f stringWriteFunc) WriteString(s string) (int, error) { return f(s) }
+
 func TestSamples(t *testing.T) {
 	for _, name := range []string{
 		"choice-condition",
@@ -270,6 +270,7 @@ func TestSamples(t *testing.T) {
 		"func-text-content",
 		"func-return-eval",
 		"global",
+		"glue",
 		"if-else",
 		"math",
 		"math-type-coercion",
@@ -290,17 +291,23 @@ func TestSamples(t *testing.T) {
 			expected := readfile(t, base+".txt")
 			root, listDefs := load(t, base+".json")
 			var b strings.Builder
-			output, choices, eval := Continue(t, Init(root, listDefs), root)
-			b.WriteString(output)
+			w := glue.NewWriter(&b)
+			write := stringWriteFunc(func(s string) (int, error) {
+				t.Logf("%q", s)
+				return w.WriteString(s)
+			})
+			choices, eval := Continue(t, write, Init(root, listDefs), root)
 			for len(choices) > 0 {
+				w.WriteEnd()
 				b.WriteRune('\n')
 				for i, choice := range choices {
-					fmt.Fprintf(&b, "%d: %s\n", i+1, choice.Label)
+					write(fmt.Sprintf("%d: %s\n", i+1, choice.Label))
 				}
+				w.WriteEnd()
 				b.WriteString("?> ")
-				output, choices, eval = Continue(t, eval, choices[0].Dest)
-				b.WriteString(output)
+				choices, eval = Continue(t, write, eval, choices[0].Dest)
 			}
+			w.WriteEnd()
 			actual := b.String()
 			assert.Equal(t, expected, actual)
 		})

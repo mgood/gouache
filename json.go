@@ -80,6 +80,8 @@ func loadNode(n any) Node {
 			return Done{}
 		case "\n":
 			return Newline{}
+		case "<>":
+			return Glue{}
 		case "ev":
 			return BeginEval{}
 		case "/ev":

@@ -3,6 +3,8 @@ package gouache
 import (
 	"fmt"
 	"strings"
+
+	"github.com/mgood/gouache/glue"
 )
 
 type Output string
@@ -48,18 +50,24 @@ func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	out, choice, elem, stack, stepper := e.Stepper.Step(e.Stack, el)
 	if elem == nil {
 		var nextStepper Stepper
-		stack, elem, nextStepper = stack.PopFrame()
+		var isFunction bool
+		stack, elem, nextStepper, isFunction = stack.PopFrame()
 		if nextStepper == nil {
 			nextStepper = BaseEvaluator{}
-		}
-		// If we were capturing the output, restore capturing
-		// of the output to the previous frame.
-		// Maybe the output capture should go into the stack instead?
-		if sw, ok := stepper.(StringWrappedEvaluator); ok {
+		} else if sw, ok := stepper.(StringWrappedEvaluator); ok {
+			// If we were capturing the output, restore capturing
+			// of the output to the previous frame.
+			// Maybe the output capture should go into the stack instead?
 			sw.wrapped = nextStepper
+			if isFunction {
+				sw.output += string(glue.FuncEnd)
+			}
 			stepper = sw
 		} else {
 			stepper = nextStepper
+			if isFunction {
+				out += Output(glue.FuncEnd)
+			}
 		}
 		stack = stack.PushVal(VoidValue{})
 	}
@@ -111,18 +119,12 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
-		stack, newline := stack.ShouldPrependNewline()
-		if newline {
-			n = "\n" + n
-		}
 		return Output(n), nil, el.Next(), stack, e
 	case Newline:
-		stack, emit := stack.ShouldEmitNewline()
-		var o Output
-		if emit {
-			o = Output("\n")
-		}
+		o := Output("\n")
 		return o, nil, el.Next(), stack, e
+	case Glue:
+		return Output(glue.Glue), nil, el.Next(), stack, e
 	case BeginEval:
 		return "", nil, el.Next(), stack, EvalEvaluator{Prev: e}
 	case SetTemp:
@@ -209,8 +211,11 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		}
 		return "", nil, el.Next(), stack, e
 	case FuncReturn:
-		stack, ret, eval := stack.PopFrame()
-		return "", nil, ret, stack, eval
+		stack, ret, eval, isFunction := stack.PopFrame()
+		if !isFunction {
+			panic(fmt.Errorf("unexpected function return"))
+		}
+		return Output(glue.FuncEnd), nil, ret, stack, eval
 	case TunnelCall:
 		addr := n.Dest
 		if n.Var {
@@ -231,7 +236,10 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		return "", nil, el.Next(), stack, e
 	case TunnelReturn:
 		rv, stack := stack.PopVal()
-		stack, ret, eval := stack.PopFrame()
+		stack, ret, eval, isFunction := stack.PopFrame()
+		if isFunction {
+			panic(fmt.Errorf("unexpected tunnel return in function"))
+		}
 		if ret == nil {
 			panic(fmt.Errorf("Found tunnel onwards ->-> but no tunnel to return to"))
 		}
@@ -251,10 +259,6 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 	case Out:
 		val, stack := stack.PopVal()
 		o := val.(Outputter).Output()
-		stack, newline := stack.ShouldPrependNewline()
-		if newline {
-			o = "\n" + o
-		}
 		return o, nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
@@ -377,7 +381,7 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 			panic(fmt.Errorf("function call target %q not found", n.Dest))
 		}
 		stack = stack.PushFrame(el.Next(), e, true)
-		return "", nil, dest, stack, BaseEvaluator{}
+		return Output(glue.FuncStart), nil, dest, stack, BaseEvaluator{}
 	case TurnCounter:
 		turn := IntValue(stack.turnCount)
 		stack = stack.PushVal(turn)
@@ -405,10 +409,6 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 	case Out:
 		val, stack := stack.PopVal()
 		o := val.(Outputter).Output()
-		stack, newline := stack.ShouldPrependNewline()
-		if newline {
-			o = "\n" + o
-		}
 		return o, nil, el.Next(), stack, e
 	case Void:
 		stack = stack.PushVal(VoidValue{})
@@ -532,6 +532,10 @@ func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, El
 		}
 		return "", nil, dest, stack, e
 	case EndStringEval:
+		// XXX how should this handle special "glue" characters?
+		// Calling `glue.Strip()` removes things like trailing whitespace which can
+		// still be significant in the result, but do we want things like control
+		// characters removed in case we're checking something like length?
 		stack = stack.PushVal(StringValue(e.output))
 		return "", nil, el.Next(), stack, e.Prev
 	case BeginTag:

@@ -1,12 +1,13 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/mgood/gouache"
+	"github.com/mgood/gouache/glue"
 )
 
 func main() {
@@ -19,51 +20,36 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	output, choices, eval := Continue(gouache.Init(elem, listDefs), elem)
-	fmt.Print(output)
+	b := bufio.NewWriter(os.Stdout)
+	w := glue.NewWriter(b)
+	choices, eval := Continue(w, gouache.Init(elem, listDefs), elem)
 	for len(choices) > 0 {
-		fmt.Println()
+		w.WriteEnd()
+		b.WriteRune('\n')
 		for i, choice := range choices {
-			fmt.Printf("%d: %s\n", i+1, choice.Label)
+			w.WriteString(fmt.Sprintf("%d: %s\n", i+1, choice.Label))
 		}
-		fmt.Print("?> ")
+		w.WriteEnd()
+		b.WriteString("?> ")
+		b.Flush()
 		var i int
 		fmt.Scanln(&i)
-		output, choices, eval = Continue(eval, choices[i-1].Dest)
-		fmt.Print(output)
+		choices, eval = Continue(w, eval, choices[i-1].Dest)
 	}
+	w.WriteEnd()
+	b.Flush()
 }
 
-func Continue(eval gouache.Evaluator, elem gouache.Element) (string, []gouache.Choice, gouache.Evaluator) {
+func Continue(output glue.StringWriter, eval gouache.Evaluator, elem gouache.Element) ([]gouache.Choice, gouache.Evaluator) {
 	var choices []gouache.Choice
 	var defaultChoice *gouache.Choice
-	var output strings.Builder
 	var s gouache.Output
-	skipNewline := true
 	var choice *gouache.Choice
 	write := func(o gouache.Output) {
-		s := o.String()
-		for {
-			n := strings.ReplaceAll(s, "  ", " ")
-			if len(n) == len(s) {
-				break
-			}
-			s = n
-		}
-		output.WriteString(s)
+		output.WriteString(o.String())
 	}
 	for ; ; s, choice, elem, eval = eval.Step(elem) {
-		switch s.String() {
-		case "":
-		case "\n":
-			if !skipNewline {
-				write(s)
-				skipNewline = true
-			}
-		default:
-			write(s)
-			skipNewline = false
-		}
+		write(s)
 		if choice != nil {
 			if choice.IsInvisibleDefault {
 				defaultChoice = choice
@@ -86,5 +72,5 @@ func Continue(eval gouache.Evaluator, elem gouache.Element) (string, []gouache.C
 		}
 		break
 	}
-	return output.String(), choices, eval
+	return choices, eval
 }
