@@ -199,54 +199,12 @@ type CallFrame struct {
 	evalStack *EvalFrame
 	listDefs  ListDefs
 
-	locals       *Vars
-	callDepth    int
-	newlineState newlineState
-	prev         *CallFrame
-	returnTo     Element
-	retStep      Stepper
-}
-
-func (f *CallFrame) ShouldEmitNewline() (*CallFrame, bool) {
-	if f == nil {
-		return nil, true
-	}
-	switch f.newlineState {
-	case newlineNormal:
-		return f, true
-	case newlineSkipFirst:
-		r := *f
-		r.newlineState = newlinePending
-		return &r, false
-	case newlinePending:
-		r := *f
-		r.newlineState = newlineBuffered
-		return &r, false
-	case newlineBuffered:
-		return f, false
-	default:
-		panic(fmt.Errorf("unhandled newline state %d", f.newlineState))
-	}
-}
-
-func (f *CallFrame) ShouldPrependNewline() (*CallFrame, bool) {
-	if f == nil {
-		return nil, false
-	}
-	switch f.newlineState {
-	case newlineNormal, newlinePending:
-		return f, false
-	case newlineSkipFirst:
-		r := *f
-		r.newlineState = newlinePending
-		return &r, false
-	case newlineBuffered:
-		r := *f
-		r.newlineState = newlinePending
-		return &r, true
-	default:
-		panic(fmt.Errorf("unhandled newline state %d", f.newlineState))
-	}
+	locals     *Vars
+	callDepth  int
+	isFunction bool
+	prev       *CallFrame
+	returnTo   Element
+	retStep    Stepper
 }
 
 func (f *CallFrame) Visit(addr Address, index int) *CallFrame {
@@ -369,23 +327,21 @@ func (f *CallFrame) PushFrame(returnTo Element, retStep Stepper, isFunction bool
 		return &CallFrame{}
 	}
 	r := &CallFrame{
-		prev:      f,
-		returnTo:  returnTo,
-		retStep:   retStep,
-		visits:    f.visits,
-		turnCount: f.turnCount,
-		globals:   f.globals,
-		callDepth: f.callDepth + 1,
-		evalStack: f.evalStack,
-		listDefs:  f.listDefs,
-	}
-	if isFunction {
-		r.newlineState = newlineSkipFirst
+		prev:       f,
+		returnTo:   returnTo,
+		retStep:    retStep,
+		visits:     f.visits,
+		turnCount:  f.turnCount,
+		globals:    f.globals,
+		callDepth:  f.callDepth + 1,
+		isFunction: isFunction,
+		evalStack:  f.evalStack,
+		listDefs:   f.listDefs,
 	}
 	return r
 }
 
-func (f *CallFrame) PopFrame() (*CallFrame, Element, Stepper) {
+func (f *CallFrame) PopFrame() (*CallFrame, Element, Stepper, bool) {
 	p := f.prev
 	if p == nil {
 		p = &CallFrame{}
@@ -397,12 +353,13 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element, Stepper) {
 		evalStack: f.evalStack,
 		listDefs:  f.listDefs,
 
-		callDepth: p.callDepth,
-		locals:    p.locals,
-		prev:      p.prev,
-		returnTo:  p.returnTo,
-		retStep:   p.retStep,
-	}, f.returnTo, f.retStep
+		callDepth:  p.callDepth,
+		locals:     p.locals,
+		prev:       p.prev,
+		returnTo:   p.returnTo,
+		retStep:    p.retStep,
+		isFunction: p.isFunction,
+	}, f.returnTo, f.retStep, f.isFunction
 }
 
 func (f *CallFrame) WithGlobal(name string, value Value) *CallFrame {

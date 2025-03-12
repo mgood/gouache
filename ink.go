@@ -27,6 +27,7 @@ type Node interface{}
 
 type Text string
 type Newline struct{} // "\n"
+type Glue struct{}    // "<>"
 type Address string
 
 func (a Address) Parent() Address {

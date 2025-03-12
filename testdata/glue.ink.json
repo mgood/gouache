@@ -1,0 +1,42 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "^glue directly between",
+      "<>",
+      "^words",
+      "\n",
+      "^glue between",
+      "\n",
+      "<>",
+      "\n",
+      "^lines",
+      "\n",
+      "^glue newline",
+      "\n",
+      "<>",
+      "^ space after line",
+      "\n",
+      "^glue first line",
+      "<>",
+      "\n",
+      "^then newline",
+      "\n",
+      "^space before glue ",
+      "<>",
+      "\n",
+      "^space after newline",
+      "\n",
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    null
+  ],
+  "listDefs": {}
+}
