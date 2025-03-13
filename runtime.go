@@ -128,40 +128,16 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 	case BeginEval:
 		return "", nil, el.Next(), stack, EvalEvaluator{Prev: e}
 	case SetTemp:
-		val, stack := stack.PopVal()
-		stack = stack.WithLocal(n.Name, val)
+		stack = n.Apply(stack)
 		return "", nil, el.Next(), stack, e
 	case Pop:
 		_, stack = stack.PopVal()
 		return "", nil, el.Next(), stack, e
 	case DupTop:
-		v, stack := stack.PopVal()
-		stack = stack.PushVal(v)
-		stack = stack.PushVal(v)
+		stack = n.Apply(stack)
 		return "", nil, el.Next(), stack, e
 	case Divert:
-		addr := n.Dest
-		if n.Var {
-			addrVar, ok := stack.GetVar(string(addr))
-			if !ok {
-				panic(fmt.Errorf("address variable %q not found", addr))
-			}
-			addr = addrVar.(DivertTargetValue).Dest
-		}
-		if n.Conditional {
-			var cond Value
-			cond, stack = stack.PopVal()
-			if !truthy(cond) {
-				return "", nil, el.Next(), stack, e
-			}
-		}
-		if n.incTurnCount {
-			stack = stack.IncTurnCount()
-		}
-		dest := el.Find(addr)
-		if dest == nil {
-			panic(fmt.Errorf("divert target %q not found", n.Dest))
-		}
+		dest, stack := n.GetDest(el, stack)
 		return "", nil, dest, stack, e
 	case BeginTag:
 		return "", nil, el.Next(), stack, TagEvaluator{Prev: e}
@@ -310,20 +286,10 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		stack = stack.PushVal(val)
 		return "", nil, el.Next(), stack, e
 	case SetVar:
-		var val Value
-		val, stack = stack.PopVal()
-		if n.Reassign {
-			stack = stack.UpdateVar(n.Name, val)
-		} else {
-			stack = stack.WithGlobal(n.Name, val)
-		}
+		stack = n.Apply(stack)
 		return "", nil, el.Next(), stack, e
 	case SetTemp:
-		var val Value
-		val, stack = stack.PopVal()
-		// TODO use "re" reassign flag to check that it's already
-		// been set?
-		stack = stack.WithLocal(n.Name, val)
+		stack = n.Apply(stack)
 		return "", nil, el.Next(), stack, e
 	case DivertTargetValue, IntValue, FloatValue, BoolValue, ListValue:
 		stack = stack.PushVal(n)
@@ -344,28 +310,7 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		_, stack = stack.PopVal()
 		return "", nil, el.Next(), stack, e
 	case Divert:
-		addr := n.Dest
-		if n.Var {
-			addrVar, ok := stack.GetVar(string(addr))
-			if !ok {
-				panic(fmt.Errorf("address variable %q not found", addr))
-			}
-			addr = addrVar.(DivertTargetValue).Dest
-		}
-		if n.Conditional {
-			var cond Value
-			cond, stack = stack.PopVal()
-			if !truthy(cond) {
-				return "", nil, el.Next(), stack, e
-			}
-		}
-		if n.incTurnCount {
-			stack = stack.IncTurnCount()
-		}
-		dest := el.Find(addr)
-		if dest == nil {
-			panic(fmt.Errorf("divert target %q not found", n.Dest))
-		}
+		dest, stack := n.GetDest(el, stack)
 		return "", nil, dest, stack, e
 	case FuncCall:
 		addr := n.Dest
@@ -473,9 +418,7 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		stack = stack.PushVal(a.Intersect(b))
 		return "", nil, el.Next(), stack, e
 	case DupTop:
-		v, stack := stack.PopVal()
-		stack = stack.PushVal(v)
-		stack = stack.PushVal(v)
+		stack = n.Apply(stack)
 		return "", nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
@@ -511,25 +454,7 @@ func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, El
 			wrapped: EvalEvaluator{Prev: e},
 		}
 	case Divert:
-		addr := n.Dest
-		if n.Var {
-			addrVar, ok := stack.GetVar(string(addr))
-			if !ok {
-				panic(fmt.Errorf("address variable %q not found", addr))
-			}
-			addr = addrVar.(DivertTargetValue).Dest
-		}
-		if n.Conditional {
-			var cond IntValue
-			cond, stack = pop[IntValue](stack)
-			if cond == 0 {
-				return "", nil, el.Next(), stack, e
-			}
-		}
-		dest := el.Find(addr)
-		if dest == nil {
-			panic(fmt.Errorf("divert target %q not found", n.Dest))
-		}
+		dest, stack := n.GetDest(el, stack)
 		return "", nil, dest, stack, e
 	case EndStringEval:
 		stack = stack.PushVal(StringValue(glue.StripInline(e.output)))
