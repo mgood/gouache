@@ -532,11 +532,7 @@ func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, El
 		}
 		return "", nil, dest, stack, e
 	case EndStringEval:
-		// XXX how should this handle special "glue" characters?
-		// Calling `glue.Strip()` removes things like trailing whitespace which can
-		// still be significant in the result, but do we want things like control
-		// characters removed in case we're checking something like length?
-		stack = stack.PushVal(StringValue(e.output))
+		stack = stack.PushVal(StringValue(glue.StripInline(e.output)))
 		return "", nil, el.Next(), stack, e.Prev
 	case BeginTag:
 		return "", nil, el.Next(), stack, TagEvaluator{Prev: e}
