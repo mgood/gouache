@@ -1,5 +1,7 @@
 package glue
 
+import "strings"
+
 type RuneWriter interface {
 	WriteRune(rune) (n int, err error)
 }
@@ -34,6 +36,17 @@ func (w *writer) WriteString(s string) (n int, err error) {
 func (w *writer) WriteRune(r rune) (n int, err error) {
 	w.state, n, err = w.state(w.RuneWriter, r)
 	return
+}
+
+func StripInline(s string) string {
+	var b strings.Builder
+	w := NewWriter(&b)
+	// in order to preserve surrounding spaces, add non-space characters
+	// to the beginning and end of the string, and then strip them after
+	w.WriteRune('^')
+	w.WriteString(s)
+	w.WriteRune('$')
+	return strings.TrimPrefix(strings.TrimSuffix(b.String(), "$"), "^")
 }
 
 const (

@@ -266,6 +266,7 @@ func (f stringWriteFunc) WriteString(s string) (int, error) { return f(s) }
 func TestSamples(t *testing.T) {
 	for _, name := range []string{
 		"choice-condition",
+		"choice-func-content",
 		"func-abs",
 		"func-text-content",
 		"func-return-eval",
