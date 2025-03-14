@@ -166,17 +166,21 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 				enabled = false
 			}
 		}
-		// TODO error here if we can't find the target for this choice?
-		var choice *Choice
-		if enabled {
-			isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
-			dest := Divert{Dest: n.Dest, incTurnCount: !isInvisibleDefault}
-			choice = &Choice{
-				Label:              string(label),
-				Dest:               choiceElement{node: dest, src: el},
-				IsInvisibleDefault: isInvisibleDefault,
-			}
+		if !enabled {
+			return "", nil, el.Next(), stack, e
 		}
+		isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
+		dest := Divert{
+			Dest:             n.Dest,
+			incTurnCount:     !isInvisibleDefault,
+			resetChoiceCount: true,
+		}
+		choice := &Choice{
+			Label:              string(label),
+			Dest:               choiceElement{node: dest, src: el},
+			IsInvisibleDefault: isInvisibleDefault,
+		}
+		stack = stack.IncChoiceCount()
 		return "", choice, el.Next(), stack, e
 	case SetVar:
 		val, stack := stack.PopVal()
@@ -419,6 +423,10 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		return "", nil, el.Next(), stack, e
 	case DupTop:
 		stack = n.Apply(stack)
+		return "", nil, el.Next(), stack, e
+	case ChoiceCounter:
+		count := IntValue(stack.ChoiceCount())
+		stack = stack.PushVal(count)
 		return "", nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))

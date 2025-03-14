@@ -193,11 +193,12 @@ func (l ListDefs) Get(name string) (ListValue, bool) {
 }
 
 type CallFrame struct {
-	visits    *Visit
-	turnCount int
-	globals   *Vars
-	evalStack *EvalFrame
-	listDefs  ListDefs
+	visits      *Visit
+	turnCount   int
+	choiceCount int
+	globals     *Vars
+	evalStack   *EvalFrame
+	listDefs    ListDefs
 
 	locals     *Vars
 	callDepth  int
@@ -236,6 +237,31 @@ func (f *CallFrame) VisitCount(addr Address) int {
 		return 0
 	}
 	return f.visits.Count(addr)
+}
+
+func (f *CallFrame) ChoiceCount() int {
+	if f == nil {
+		return 0
+	}
+	return f.choiceCount
+}
+
+func (f *CallFrame) IncChoiceCount() *CallFrame {
+	if f == nil {
+		return &CallFrame{choiceCount: 1}
+	}
+	r := *f
+	r.choiceCount++
+	return &r
+}
+
+func (f *CallFrame) ResetChoiceCount() *CallFrame {
+	if f == nil {
+		return nil
+	}
+	r := *f
+	r.choiceCount = 0
+	return &r
 }
 
 func (f *CallFrame) ListInt(origin string, value int) ListValue {
@@ -327,16 +353,17 @@ func (f *CallFrame) PushFrame(returnTo Element, retStep Stepper, isFunction bool
 		return &CallFrame{}
 	}
 	r := &CallFrame{
-		prev:       f,
-		returnTo:   returnTo,
-		retStep:    retStep,
-		visits:     f.visits,
-		turnCount:  f.turnCount,
-		globals:    f.globals,
-		callDepth:  f.callDepth + 1,
-		isFunction: isFunction,
-		evalStack:  f.evalStack,
-		listDefs:   f.listDefs,
+		prev:        f,
+		returnTo:    returnTo,
+		retStep:     retStep,
+		visits:      f.visits,
+		turnCount:   f.turnCount,
+		choiceCount: f.choiceCount,
+		globals:     f.globals,
+		callDepth:   f.callDepth + 1,
+		isFunction:  isFunction,
+		evalStack:   f.evalStack,
+		listDefs:    f.listDefs,
 	}
 	return r
 }
@@ -347,11 +374,12 @@ func (f *CallFrame) PopFrame() (*CallFrame, Element, Stepper, bool) {
 		p = &CallFrame{}
 	}
 	return &CallFrame{
-		visits:    f.visits,
-		turnCount: f.turnCount,
-		globals:   f.globals,
-		evalStack: f.evalStack,
-		listDefs:  f.listDefs,
+		visits:      f.visits,
+		turnCount:   f.turnCount,
+		choiceCount: f.choiceCount,
+		globals:     f.globals,
+		evalStack:   f.evalStack,
+		listDefs:    f.listDefs,
 
 		callDepth:  p.callDepth,
 		locals:     p.locals,
