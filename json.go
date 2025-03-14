@@ -112,6 +112,8 @@ func loadNode(n any) Node {
 			return TurnsSince{}
 		case "visit":
 			return VisitCounter{}
+		case "choiceCnt":
+			return ChoiceCounter{}
 		case "~ret":
 			return FuncReturn{}
 		case "->->":

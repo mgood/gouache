@@ -21,6 +21,9 @@ func (n Divert) GetDest(el Element, stack *CallFrame) (Element, *CallFrame) {
 	if n.incTurnCount {
 		stack = stack.IncTurnCount()
 	}
+	if n.resetChoiceCount {
+		stack = stack.ResetChoiceCount()
+	}
 	dest := el.Find(addr)
 	if dest == nil {
 		panic(fmt.Errorf("divert target %q not found", n.Dest))
