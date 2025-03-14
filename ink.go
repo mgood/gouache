@@ -67,11 +67,9 @@ type ChoicePoint struct {
 }
 
 type Divert struct {
-	Dest             Address `json:"->"`
-	Var              bool    `json:"var"`
-	Conditional      bool    `json:"c"`
-	incTurnCount     bool
-	resetChoiceCount bool
+	Dest        Address `json:"->"`
+	Var         bool    `json:"var"`
+	Conditional bool    `json:"c"`
 }
 
 type FuncCall struct {

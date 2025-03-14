@@ -40,7 +40,7 @@ func TestInkProofBytecode(t *testing.T) {
 			root, listDefs := load(t, filepath.Join(base, "bytecode.json"))
 			var b strings.Builder
 			w := glue.NewWriter(&b)
-			choices, eval := Continue(t, w, Init(root, listDefs), root)
+			choices := ContinueT(t, w, Init(root, listDefs), root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')
@@ -48,9 +48,10 @@ func TestInkProofBytecode(t *testing.T) {
 					b.WriteString(fmt.Sprintf("%d: %s\n", i+1, choice.Label))
 				}
 				b.WriteString("?> ")
-				var choice int
-				fmt.Fscanln(input, &choice)
-				choices, eval = Continue(t, w, eval, choices[choice-1].Dest)
+				var choiceNum int
+				fmt.Fscanln(input, &choiceNum)
+				choice := choices[choiceNum-1]
+				choices = ContinueT(t, w, choice.Eval, choice.Dest)
 			}
 			w.WriteEnd()
 			actual := b.String()
@@ -59,7 +60,7 @@ func TestInkProofBytecode(t *testing.T) {
 	}
 }
 
-func openfile(t *testing.T, fn string) io.Reader {
+func openfile(t TBMinimal, fn string) io.Reader {
 	t.Helper()
 	b, err := os.Open(fn)
 	require.NoError(t, err)
@@ -105,11 +106,8 @@ func TestInkProofInk(t *testing.T) {
 				"I063": "divert weave points",
 				"I065": "tunnel choice stack",
 				"I066": "tunnel self timeout",
-				"I077": "variable assigned in choice",
 				"I079": "visit counts",
-				"I083": "variable assigned in choice",
 				"I089": "visit counts",
-				"I093": "visit counts",
 				"I098": "knot & thread interaction",
 				"I099": "tags",
 				"I100": "tags",
@@ -137,7 +135,7 @@ func TestInkProofInk(t *testing.T) {
 				t.Logf("%q", s)
 				return w.WriteString(s)
 			})
-			choices, eval := Continue(t, write, Init(root, listDefs), root)
+			choices := ContinueT(t, write, Init(root, listDefs), root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')
@@ -146,9 +144,10 @@ func TestInkProofInk(t *testing.T) {
 				}
 				w.WriteEnd()
 				b.WriteString("?> ")
-				var choice int
-				fmt.Fscanln(input, &choice)
-				choices, eval = Continue(t, write, eval, choices[choice-1].Dest)
+				var choiceNum int
+				fmt.Fscanln(input, &choiceNum)
+				choice := choices[choiceNum-1]
+				choices = ContinueT(t, write, choice.Eval, choice.Dest)
 			}
 			w.WriteEnd()
 			actual := b.String()
