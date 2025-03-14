@@ -22,7 +22,7 @@ func TestSimpleTextOutput(t *testing.T) {
 	}.First()
 	var b strings.Builder
 	w := glue.NewWriter(&b)
-	Continue(t, w, Init(root, nil), root)
+	ContinueT(t, w, Init(root, nil), root)
 	w.WriteEnd()
 	assert.Equal(t, "Once upon a time...\n", b.String())
 }
@@ -179,7 +179,7 @@ func TestSingleChoice(t *testing.T) {
 	}.First()
 	var b strings.Builder
 	w := glue.NewWriter(&b)
-	choices, eval := Continue(t, w, Init(root, nil), root)
+	choices := ContinueT(t, w, Init(root, nil), root)
 	w.WriteEnd()
 	assert.Equal(t, "Once upon a time...\n", b.String())
 	choiceNames := make([]string, len(choices))
@@ -189,7 +189,8 @@ func TestSingleChoice(t *testing.T) {
 	assert.Equal(t, []string{"choice"}, choiceNames)
 
 	b.Reset()
-	choices, eval = Continue(t, w, eval, choices[0].Dest)
+	choice := choices[0]
+	choices = ContinueT(t, w, choice.Eval, choice.Dest)
 	w.WriteEnd()
 	assert.Equal(t, "The end.\n", b.String())
 	assert.Len(t, choices, 0)
@@ -207,42 +208,43 @@ func elementString(elem Element) string {
 	return b.String()
 }
 
-func Continue(t testing.TB, output glue.StringWriter, eval Evaluator, elem Element) ([]Choice, Evaluator) {
-	var choices []Choice
-	var defaultChoice *Choice
-	var s Output
-	var choice *Choice
-	t.Logf("%T %s", eval, elementString(elem))
-	for {
-		s, choice, elem, eval = eval.Step(elem)
-		t.Logf("%T %s", eval, elementString(elem))
-		output.WriteString(s.String())
-		if choice != nil {
-			if choice.IsInvisibleDefault {
-				defaultChoice = choice
-			} else {
-				choices = append(choices, *choice)
-			}
-		}
-		if elem != nil {
-			continue
-		}
-		if len(choices) == 0 && defaultChoice != nil {
-			elem = defaultChoice.Dest
-			defaultChoice = nil
-			continue
-		}
-		if len(choices) == 1 && defaultChoice != nil {
-			elem = defaultChoice.Dest
-			defaultChoice = nil
-			continue
-		}
-		break
-	}
-	return choices, eval
+type tLogger interface {
+	Logf(string, ...interface{})
 }
 
-func load(t testing.TB, fn string) (Element, ListDefs) {
+type loggingEvaluator struct {
+	TB       TBMinimal
+	Eval     Evaluator
+	MaxSteps int
+}
+
+func logEval(t TBMinimal, eval Evaluator, maxSteps int) Evaluator {
+	return loggingEvaluator{TB: t, Eval: eval, MaxSteps: maxSteps}
+}
+
+func (e loggingEvaluator) Step(elem Element) (Output, *Choice, Element, Evaluator) {
+	if e.MaxSteps <= 0 {
+		e.TB.Errorf("max steps exceeded")
+		e.TB.FailNow()
+	}
+	e.TB.Logf("%T %s", e, elementString(elem))
+	out, choice, elem, eval := e.Eval.Step(elem)
+	return out, choice, elem, logEval(e.TB, eval, e.MaxSteps-1)
+}
+
+func ContinueT(t TBMinimal, output glue.StringWriter, eval Evaluator, elem Element) []Choice {
+	return Continue(output, logEval(t, eval, 10000), elem)
+}
+
+type TBMinimal interface {
+	Helper()
+	Cleanup(func())
+	Logf(string, ...interface{})
+	require.TestingT
+	assert.TestingT
+}
+
+func load(t TBMinimal, fn string) (Element, ListDefs) {
 	t.Helper()
 	f, err := os.Open(fn)
 	assert.NoError(t, err)
@@ -252,7 +254,7 @@ func load(t testing.TB, fn string) (Element, ListDefs) {
 	return el, listDefs
 }
 
-func readfile(t *testing.T, fn string) string {
+func readfile(t TBMinimal, fn string) string {
 	t.Helper()
 	b, err := os.ReadFile(fn)
 	require.NoError(t, err)
@@ -298,7 +300,7 @@ func TestSamples(t *testing.T) {
 				t.Logf("%q", s)
 				return w.WriteString(s)
 			})
-			choices, eval := Continue(t, write, Init(root, listDefs), root)
+			choices := ContinueT(t, write, Init(root, listDefs), root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')
@@ -307,7 +309,8 @@ func TestSamples(t *testing.T) {
 				}
 				w.WriteEnd()
 				b.WriteString("?> ")
-				choices, eval = Continue(t, write, eval, choices[0].Dest)
+				choice := choices[0]
+				choices = ContinueT(t, write, choice.Eval, choice.Dest)
 			}
 			w.WriteEnd()
 			actual := b.String()

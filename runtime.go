@@ -20,6 +20,7 @@ type Outputter interface {
 type Choice struct {
 	Label              string
 	Dest               Element
+	Eval               Evaluator
 	IsInvisibleDefault bool
 }
 
@@ -48,6 +49,13 @@ func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
 	}
 	out, choice, elem, stack, stepper := e.Stepper.Step(e.Stack, el)
+	if choice != nil {
+		choiceStack := stack.ResetChoiceCount()
+		if !choice.IsInvisibleDefault {
+			choiceStack = choiceStack.IncTurnCount()
+		}
+		choice.Eval = StepEvaluator{Stack: choiceStack, Stepper: stepper}
+	}
 	if elem == nil {
 		var nextStepper Stepper
 		var isFunction bool
@@ -102,6 +110,34 @@ func Init(root Element, listDefs ListDefs) Evaluator {
 		}
 	}
 	return eval
+}
+
+func Continue(output glue.StringWriter, eval Evaluator, elem Element) []Choice {
+	var choices []Choice
+	var defaultChoice *Choice
+	var s Output
+	var choice *Choice
+	for ; ; s, choice, elem, eval = eval.Step(elem) {
+		output.WriteString(s.String())
+		if choice != nil {
+			if choice.IsInvisibleDefault {
+				defaultChoice = choice
+			} else {
+				choices = append(choices, *choice)
+			}
+		}
+		if elem != nil {
+			continue
+		}
+		if len(choices) == 0 && defaultChoice != nil {
+			elem = defaultChoice.Dest
+			eval = defaultChoice.Eval
+			defaultChoice = nil
+			continue
+		}
+		break
+	}
+	return choices
 }
 
 // elements should report their path
@@ -171,9 +207,7 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		}
 		isInvisibleDefault := n.Flags&IsInvisibleDefault != 0
 		dest := Divert{
-			Dest:             n.Dest,
-			incTurnCount:     !isInvisibleDefault,
-			resetChoiceCount: true,
+			Dest: n.Dest,
 		}
 		choice := &Choice{
 			Label:              string(label),
