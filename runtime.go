@@ -42,8 +42,6 @@ type StepEvaluator struct {
 
 func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 	switch el.Node().(type) {
-	case Done:
-		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
 	case End:
 		// FIXME end is supposed to unwind the full stack
 		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
@@ -274,6 +272,8 @@ func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		val, stack := stack.PopVal()
 		o := val.(Outputter).Output()
 		return o, nil, el.Next(), stack, e
+	case Done:
+		return "", nil, nil, stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}
