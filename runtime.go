@@ -462,6 +462,13 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		count := IntValue(stack.ChoiceCount())
 		stack = stack.PushVal(count)
 		return "", nil, el.Next(), stack, e
+	case Seq:
+		elements, stack := pop[IntValue](stack)
+		seqCount, stack := pop[IntValue](stack)
+		addr, _ := el.Address()
+		index := shuffle(string(addr), int(elements), int(seqCount)-1)
+		stack = stack.PushVal(IntValue(index))
+		return "", nil, el.Next(), stack, e
 	default:
 		panic(fmt.Errorf("unexpected node type %T", n))
 	}

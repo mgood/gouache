@@ -101,7 +101,6 @@ func TestInkProofInk(t *testing.T) {
 				"I027": "visit counts",
 				"I028": "visit counts",
 				"I031": "visit counts",
-				"I043": "seq op",
 				"I059": "tunnel choice stack",
 				"I063": "divert weave points",
 				"I066": "tunnel self timeout",

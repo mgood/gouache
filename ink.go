@@ -3,6 +3,8 @@ package gouache
 import (
 	"cmp"
 	"fmt"
+	"hash/fnv"
+	"io"
 	"maps"
 	"math"
 	"math/rand/v2"
@@ -109,6 +111,7 @@ type ListAllFunc struct{}       // "LIST_ALL"
 type ListInvertFunc struct{}    // "LIST_INVERT"
 type ListIntersectFunc struct{} // "L^"
 type ListRangeFunc struct{}     // "range"
+type Seq struct{}               // "seq"
 
 type UnaryOp func(a Value) Value
 
@@ -388,9 +391,13 @@ var Max BinOp = func(a, b Value) Value {
 // However, we'll just use a global random source for now.
 // Since PGC uses a simple internal state, we could also copy the struct
 // to preserve its state after each call to ensure determinism.
-var randSource *rand.Rand
+var (
+	randSource *rand.Rand
+	storySeed  uint64
+)
 
 func seedRandom(seed uint64) {
+	storySeed = seed
 	randSource = rand.New(rand.NewPCG(0, seed))
 }
 
@@ -407,6 +414,19 @@ var Rnd BinOp = func(a, b Value) Value {
 var Srnd UnaryOp = func(v Value) Value {
 	seedRandom(uint64(v.(IntValue)))
 	return VoidValue{}
+}
+
+func shuffle(container string, elements, visitIndex int) int {
+	h := fnv.New64a()
+	_, err := io.WriteString(h, container)
+	if err != nil {
+		panic(err)
+	}
+	loop := visitIndex / elements
+	seed := h.Sum64() + uint64(loop)
+	src := rand.New(rand.NewPCG(seed, storySeed))
+	perm := src.Perm(elements)
+	return perm[visitIndex%elements]
 }
 
 type SetTemp struct {
