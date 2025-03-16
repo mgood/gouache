@@ -143,7 +143,9 @@ func TestInkProofInk(t *testing.T) {
 				w.WriteEnd()
 				b.WriteString("?> ")
 				var choiceNum int
-				fmt.Fscanln(input, &choiceNum)
+				if _, err := fmt.Fscanln(input, &choiceNum); err != nil {
+					t.Fatalf("unable to read choice input: %s", err)
+				}
 				choice := choices[choiceNum-1]
 				choices = ContinueT(t, write, choice.Eval, choice.Dest)
 			}

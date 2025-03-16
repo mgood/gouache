@@ -33,7 +33,9 @@ func main() {
 		b.WriteString("?> ")
 		b.Flush()
 		var i int
-		fmt.Scanln(&i)
+		if _, err := fmt.Scanln(&i); err != nil {
+			log.Fatalf("unable to read input: %s", err)
+		}
 		choice := choices[i-1]
 		choices = gouache.Continue(w, choice.Eval, choice.Dest)
 	}
