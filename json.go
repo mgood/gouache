@@ -186,6 +186,8 @@ func loadNode(n any) Node {
 			return Srnd
 		case "rnd":
 			return Rnd
+		case "seq":
+			return Seq{}
 		}
 		if s, found := strings.CutPrefix(n, "^"); found {
 			return Text(s)

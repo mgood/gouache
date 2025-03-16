@@ -281,6 +281,8 @@ func TestSamples(t *testing.T) {
 		"list-basics",
 		"pop",
 		"random",
+		"random-shuffle",
+		"random-shuffle-text",
 		"sample",
 		"stitch",
 		"tempvar",

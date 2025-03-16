@@ -1,0 +1,170 @@
+{
+  "inkVersion": 21,
+  "root": [
+    [
+      "^NOTE: this output is manually generated",
+      "\n",
+      "^The seed will give the same output each time, but we don't use the same random",
+      "\n",
+      "^generator as inklecate to ensure direct compatibility.",
+      "\n",
+      "ev",
+      241,
+      "srnd",
+      "pop",
+      "/ev",
+      "\n",
+      "^Loop 1:",
+      "\n",
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      "^Loop 2:",
+      "\n",
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      "^Loop 3:",
+      "\n",
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      {
+        "->t->": "shuffler"
+      },
+      [
+        "done",
+        {
+          "#n": "g-0"
+        }
+      ],
+      null
+    ],
+    "done",
+    {
+      "shuffler": [
+        "ev",
+        {
+          "CNT?": ".^"
+        },
+        "out",
+        "/ev",
+        "^: ",
+        "<>",
+        "\n",
+        [
+          "ev",
+          "visit",
+          4,
+          "seq",
+          "/ev",
+          "ev",
+          "du",
+          0,
+          "==",
+          "/ev",
+          {
+            "->": ".^.s0",
+            "c": true
+          },
+          "ev",
+          "du",
+          1,
+          "==",
+          "/ev",
+          {
+            "->": ".^.s1",
+            "c": true
+          },
+          "ev",
+          "du",
+          2,
+          "==",
+          "/ev",
+          {
+            "->": ".^.s2",
+            "c": true
+          },
+          "ev",
+          "du",
+          3,
+          "==",
+          "/ev",
+          {
+            "->": ".^.s3",
+            "c": true
+          },
+          "nop",
+          {
+            "s0": [
+              "pop",
+              "^a",
+              {
+                "->": ".^.^.29"
+              },
+              null
+            ],
+            "s1": [
+              "pop",
+              "^b",
+              {
+                "->": ".^.^.29"
+              },
+              null
+            ],
+            "s2": [
+              "pop",
+              "^c",
+              {
+                "->": ".^.^.29"
+              },
+              null
+            ],
+            "s3": [
+              "pop",
+              "^d",
+              {
+                "->": ".^.^.29"
+              },
+              null
+            ],
+            "#f": 5
+          }
+        ],
+        "\n",
+        "ev",
+        "void",
+        "/ev",
+        "->->",
+        {
+          "#f": 1
+        }
+      ]
+    }
+  ],
+  "listDefs": {}
+}
