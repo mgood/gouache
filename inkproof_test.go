@@ -117,7 +117,6 @@ func TestInkProofInk(t *testing.T) {
 				"I122": "eval stack",
 				"I128": "visit counts",
 				"I130": "knots & thread interaction",
-				"I131": "knots",
 			}
 			if reason, ok := skipReasons[name]; ok {
 				t.Skipf("%s is a known failure: %s", name, reason)

@@ -325,6 +325,20 @@ func (f *CallFrame) setRef(ref VarRef, v Value) *CallFrame {
 	return &r
 }
 
+func (f *CallFrame) DeclareLocal(name string, value Value) *CallFrame {
+	if _, ok := f.locals.Get(name); ok {
+		if r, ok := value.(VarRef); ok {
+			// we're trying to redeclare a reference to a variable with the same name
+			// in the same frame, so just return the stack unmodified since we just
+			// need to keep the existing value
+			if r.Name == name && r.ContentIndex == f.callDepth+1 {
+				return f
+			}
+		}
+	}
+	return f.withLocals(f.locals.With(name, value))
+}
+
 func (f *CallFrame) WithLocal(name string, value Value) *CallFrame {
 	v, ok := f.locals.Get(name)
 	if ok {
