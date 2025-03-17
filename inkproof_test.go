@@ -100,7 +100,6 @@ func TestInkProofInk(t *testing.T) {
 			skipReasons := map[string]string{
 				"I027": "visit counts",
 				"I028": "visit counts",
-				"I031": "visit counts",
 				"I059": "tunnel choice stack",
 				"I063": "divert weave points",
 				"I066": "tunnel self timeout",

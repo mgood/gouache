@@ -382,6 +382,13 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 		count := IntValue(stack.VisitCount(addr))
 		stack = stack.PushVal(count)
 		return "", nil, el.Next(), stack, e
+	case ReadCountFunc:
+		target, stack := pop[DivertTargetValue](stack)
+		base, _ := el.Address()
+		addr := resolve(base, Address(target.Dest))
+		count := IntValue(stack.VisitCount(addr))
+		stack = stack.PushVal(count)
+		return "", nil, el.Next(), stack, e
 	case TurnsSince:
 		dv, stack := pop[DivertTargetValue](stack)
 		base, _ := el.Address()
