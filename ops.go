@@ -50,7 +50,8 @@ func (n SetVar) Apply(stack *CallFrame) *CallFrame {
 
 func (n SetTemp) Apply(stack *CallFrame) *CallFrame {
 	val, stack := stack.PopVal()
-	// TODO use "re" reassign flag to check that it's already
-	// been set?
-	return stack.WithLocal(n.Name, val)
+	if n.Reassign {
+		return stack.WithLocal(n.Name, val)
+	}
+	return stack.DeclareLocal(n.Name, val)
 }

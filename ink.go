@@ -431,7 +431,8 @@ func shuffle(container string, elements, visitIndex int) int {
 }
 
 type SetTemp struct {
-	Name string `json:"temp="`
+	Name     string `json:"temp="`
+	Reassign bool   `json:"re"`
 }
 
 type SetVar struct {

@@ -224,9 +224,13 @@ func loadNode(n any) Node {
 			}
 		}
 		if v, ok := n["temp="]; ok {
-			return SetTemp{
+			r := SetTemp{
 				Name: v.(string),
 			}
+			if v, ok := n["re"]; ok {
+				r.Reassign = v.(bool)
+			}
+			return r
 		}
 		if v, ok := n["VAR="]; ok {
 			r := SetVar{
