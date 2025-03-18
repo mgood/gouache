@@ -37,10 +37,11 @@ func TestInkProofBytecode(t *testing.T) {
 			base := filepath.Join(root, name)
 			expected := readfile(t, filepath.Join(base, "transcript.txt"))
 			input := openfile(t, filepath.Join(base, "input.txt"))
-			root, listDefs := load(t, filepath.Join(base, "bytecode.json"))
+			container, listDefs := load(t, filepath.Join(base, "bytecode.json"))
 			var b strings.Builder
 			w := glue.NewWriter(&b)
-			choices := ContinueT(t, w, Init(root, listDefs), root)
+			root, eval := Init(container, listDefs)
+			choices := ContinueT(t, w, eval, root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')
@@ -98,13 +99,9 @@ func TestInkProofInk(t *testing.T) {
 				t.Skipf("hidden by metadata.json: %v", meta.Hide)
 			}
 			skipReasons := map[string]string{
-				"I027": "visit counts",
-				"I028": "visit counts",
 				"I059": "tunnel choice stack",
-				"I063": "divert weave points",
 				"I066": "tunnel self timeout",
 				"I079": "visit counts",
-				"I089": "visit counts",
 				"I098": "knot & thread interaction",
 				"I099": "tags",
 				"I100": "tags",
@@ -112,7 +109,6 @@ func TestInkProofInk(t *testing.T) {
 				"I104": "thread newline?",
 				"I108": "tunnels",
 				"I109": "visit counts",
-				"I110": "sequence",
 				"I111": "sequence",
 				"I122": "eval stack",
 				"I128": "visit counts",
@@ -123,14 +119,15 @@ func TestInkProofInk(t *testing.T) {
 			}
 			expected := readfile(t, filepath.Join(base, "transcript.txt"))
 			input := openfile(t, filepath.Join(base, "input.txt"))
-			root, listDefs := load(t, filepath.Join(base, "story.ink.json"))
+			container, listDefs := load(t, filepath.Join(base, "story.ink.json"))
 			var b strings.Builder
 			w := glue.NewWriter(&b)
 			write := stringWriteFunc(func(s string) (int, error) {
 				t.Logf("%q", s)
 				return w.WriteString(s)
 			})
-			choices := ContinueT(t, write, Init(root, listDefs), root)
+			root, eval := Init(container, listDefs)
+			choices := ContinueT(t, write, eval, root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')

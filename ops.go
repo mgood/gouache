@@ -15,13 +15,15 @@ func (n Divert) GetDest(el Element, stack *CallFrame) (Element, *CallFrame) {
 		var cond Value
 		cond, stack = stack.PopVal()
 		if !truthy(cond) {
-			return el.Next(), stack
+			return visitNext(el, stack)
 		}
 	}
-	dest := el.Find(addr)
+	dest, visitAddr := el.Find(addr)
 	if dest == nil {
 		panic(fmt.Errorf("divert target %q not found", n.Dest))
 	}
+	from, _ := el.Address()
+	stack = visit(from, visitAddr, stack)
 	return dest, stack
 }
 

@@ -9,7 +9,7 @@ import (
 
 var ErrUnsupportedVersion = fmt.Errorf("unsupported version")
 
-func LoadJSON(r io.Reader) (Element, ListDefs, error) {
+func LoadJSON(r io.Reader) (Container, ListDefs, error) {
 	var b struct {
 		Version  int      `json:"inkVersion"`
 		Root     []any    `json:"root"`
@@ -18,12 +18,12 @@ func LoadJSON(r io.Reader) (Element, ListDefs, error) {
 	dec := json.NewDecoder(r)
 	dec.UseNumber()
 	if err := dec.Decode(&b); err != nil {
-		return nil, nil, err
+		return Container{}, nil, err
 	}
 	if b.Version < MinInkVersion || b.Version > MaxInkVersion {
-		return nil, nil, ErrUnsupportedVersion
+		return Container{}, nil, ErrUnsupportedVersion
 	}
-	return LoadContainer(b.Root).First(), b.ListDefs, nil
+	return LoadContainer(b.Root), b.ListDefs, nil
 }
 
 func LoadContainer(contents []any) Container {
@@ -111,7 +111,7 @@ func loadNode(n any) Node {
 		case "turns":
 			return TurnsSince{}
 		case "visit":
-			return VisitCounter{}
+			return VisitIndex{}
 		case "readc":
 			return ReadCountFunc{}
 		case "choiceCnt":

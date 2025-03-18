@@ -13,7 +13,7 @@ type ContainerElement struct {
 
 var _ Element = ContainerElement{}
 
-func (e ContainerElement) Find(name Address) Element {
+func (e ContainerElement) Find(name Address) (Element, []VisitAddr) {
 	return e.Self.Find(name)
 }
 
@@ -21,38 +21,44 @@ func (e ContainerElement) Address() (Address, int) {
 	return e.Self.Address(), e.Index
 }
 
-func (e ContainerElement) Flatten() *ContainerElement {
+func (e ContainerElement) Flatten() (*ContainerElement, []VisitAddr) {
 	if e.Index >= len(e.Self.Contents) {
 		if e.Self.ParentIndex == nil {
-			return nil
+			return nil, nil
 		}
-		return e.Self.Parent.at(*e.Self.ParentIndex + 1)
+		return e.Self.Parent.at(*e.Self.ParentIndex + 1), nil
 	}
 	container, ok := e.Node().(Container)
+	addrs := []VisitAddr{{
+		Addr:       e.Self.Address(),
+		Flags:      e.Self.Flags,
+		EntryIndex: e.Index,
+	}}
 	if !ok {
-		return &e
+		return &e, addrs
 	}
 	container.Parent = &e.Self
 	container.ParentIndex = ptr(e.Index)
-	return ContainerElement{
+	el, visits := ContainerElement{
 		Self:  container,
 		Index: 0,
 	}.Flatten()
+	return el, append(addrs, visits...)
 }
 
 func (e ContainerElement) Node() Node {
 	return e.Self.Contents[e.Index]
 }
 
-func (e ContainerElement) Next() Element {
-	next := ContainerElement{
+func (e ContainerElement) Next() (Element, []VisitAddr) {
+	next, visits := ContainerElement{
 		Self:  e.Self,
 		Index: e.Index + 1,
 	}.Flatten()
 	if next == nil {
-		return nil
+		return nil, nil
 	}
-	return *next
+	return *next, visits
 }
 
 type Container struct {
@@ -83,7 +89,13 @@ func (c Container) Address() Address {
 	return c.Parent.Address() + Address("."+key)
 }
 
-func (c *Container) Find(name Address) Element {
+type VisitAddr struct {
+	Addr       Address
+	Flags      ContainerFlag
+	EntryIndex int
+}
+
+func (c *Container) Find(name Address) (Element, []VisitAddr) {
 	n := string(name)
 	if !strings.HasPrefix(n, ".^.") {
 		return c.Root().Find(".^." + name)
@@ -104,17 +116,25 @@ func (c *Container) Find(name Address) Element {
 	return c.find(key)
 }
 
-func (c *Container) find(key string) Element {
+func (c *Container) find(key string) (Element, []VisitAddr) {
 	if index, err := strconv.Atoi(key); err == nil {
 		if child := c.at(index); child != nil {
-			return *child
+			addr, _ := child.Address()
+			return *child, []VisitAddr{{
+				Addr:       addr,
+				Flags:      c.Flags,
+				EntryIndex: index,
+			}}
 		}
-		return nil
+		return nil, nil
 	}
 	if child := c.findContainer(key); child != nil {
-		return child.First()
+		return child.First(), []VisitAddr{{
+			Addr:  child.Address(),
+			Flags: child.Flags,
+		}}
 	}
-	return nil
+	return nil, nil
 }
 
 func (c *Container) findContainer(key string) *Container {
@@ -149,7 +169,8 @@ func (c *Container) Root() *Container {
 }
 
 func (c Container) at(i int) *ContainerElement {
-	return c.atNoFlatten(i).Flatten()
+	elem, _ := c.atNoFlatten(i).Flatten()
+	return elem
 }
 
 func (c Container) atNoFlatten(i int) ContainerElement {

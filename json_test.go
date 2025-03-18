@@ -13,7 +13,7 @@ func TestLoadJSON(t *testing.T) {
 	t.Cleanup(func() { f.Close() })
 	c, _, err := LoadJSON(f)
 	assert.NoError(t, err)
-	assert.Equal(t, Text("Once upon a time..."), c.Node())
-	el := c.Find("0.c-0")
+	assert.Equal(t, Text("Once upon a time..."), c.First().Node())
+	el, _ := c.Find("0.c-0")
 	assert.Equal(t, BeginEval{}, el.Node())
 }

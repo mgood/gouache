@@ -6,33 +6,43 @@ import (
 )
 
 type Visit struct {
-	Address    Address
-	EntryIndex int
-	EntryTurn  int
-	Prev       *Visit
+	Address   Address
+	IsVisit   bool
+	EntryTurn int
+	Prev      *Visit
 }
 
-func (v *Visit) Push(addr Address, index, turn int) *Visit {
-	if v != nil && v.Address == addr {
+func (v *Visit) Push(addr VisitAddr, from Address, turn int) *Visit {
+	if addr.Addr == from {
+		return v
+	}
+	record := false
+	isVisit := false
+	if addr.Flags&RecordVisits != 0 {
+		if addr.Flags&CountStartOnly == 0 || addr.EntryIndex == 0 {
+			record = true
+			isVisit = true
+		}
+	}
+	if addr.Flags&CountTurns != 0 {
+		record = true
+	}
+	if !record {
 		return v
 	}
 	return &Visit{
-		Address:    addr,
-		EntryIndex: index,
-		EntryTurn:  turn,
-		Prev:       v,
+		Address:   addr.Addr,
+		IsVisit:   isVisit,
+		EntryTurn: turn,
+		Prev:      v,
 	}
 }
 
 func (v *Visit) Count(addr Address) int {
 	var count int
-	entered := false
 	for ; v != nil; v = v.Prev {
-		if !addr.Contains(v.Address) {
-			entered = false
-		} else if !entered {
+		if v.IsVisit && addr == v.Address {
 			count++
-			entered = true
 		}
 	}
 	return count
@@ -44,7 +54,7 @@ func (v *Visit) LastVisited(addr Address, turn int) int {
 		// "start" in a child container, but didn't track the container entry though
 		// this should probably have a more precise definition for how we track the
 		// container entry
-		if addr == v.Address || addr == v.Address.Parent() {
+		if addr == v.Address {
 			return v.EntryTurn
 		}
 	}
@@ -208,11 +218,11 @@ type CallFrame struct {
 	retStep    Stepper
 }
 
-func (f *CallFrame) Visit(addr Address, index int) *CallFrame {
+func (f *CallFrame) Visit(addr VisitAddr, from Address) *CallFrame {
 	if f == nil {
 		f = &CallFrame{}
 	}
-	visits := f.visits.Push(addr, index, f.turnCount)
+	visits := f.visits.Push(addr, from, f.turnCount)
 	if f.visits == visits {
 		return f
 	}
