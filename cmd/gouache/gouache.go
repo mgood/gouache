@@ -16,13 +16,14 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	elem, listDefs, err := gouache.LoadJSON(f)
+	container, listDefs, err := gouache.LoadJSON(f)
 	if err != nil {
 		log.Fatal(err)
 	}
 	b := bufio.NewWriter(os.Stdout)
 	w := glue.NewWriter(b)
-	choices := gouache.Continue(w, gouache.Init(elem, listDefs), elem)
+	elem, eval := gouache.Init(container, listDefs)
+	choices := gouache.Continue(w, eval, elem)
 	for len(choices) > 0 {
 		w.WriteEnd()
 		b.WriteRune('\n')

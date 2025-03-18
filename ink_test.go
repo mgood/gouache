@@ -12,17 +12,18 @@ import (
 )
 
 func TestSimpleTextOutput(t *testing.T) {
-	root := Container{
+	c := Container{
 		Name: "root",
 		Contents: []Node{
 			Text("Once upon a time..."),
 			Newline{},
 			Done{},
 		},
-	}.First()
+	}
 	var b strings.Builder
 	w := glue.NewWriter(&b)
-	ContinueT(t, w, Init(root, nil), root)
+	root, eval := Init(c, nil)
+	ContinueT(t, w, eval, root)
 	w.WriteEnd()
 	assert.Equal(t, "Once upon a time...\n", b.String())
 }
@@ -63,9 +64,9 @@ func TestLookupNestedFullAddress(t *testing.T) {
 		},
 	}
 	first := root.First()
-	c0 := first.Find("0.c-0")
+	c0, _ := first.Find("0.c-0")
 	assert.Equal(t, Text("child c-0"), c0.Node())
-	g0 := c0.Find("0.g-0")
+	g0, _ := c0.Find("0.g-0")
 	assert.Equal(t, Text("child g-0"), g0.Node())
 }
 
@@ -84,7 +85,7 @@ func TestLookupNamedContentElement(t *testing.T) {
 		},
 	}
 	first := root.First()
-	elem := first.Find("$r1")
+	elem, _ := first.Find("$r1")
 	assert.Equal(t, Text("2"), elem.Node())
 }
 
@@ -98,7 +99,7 @@ func TestLookupIndex(t *testing.T) {
 		},
 	}
 	first := root.First()
-	elem := first.Find("1")
+	elem, _ := first.Find("1")
 	assert.Equal(t, Text("root 1"), elem.Node())
 }
 
@@ -117,11 +118,11 @@ func TestContainerElementContinuation(t *testing.T) {
 	}
 	elem := root.First()
 	assert.Equal(t, Text("1"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Equal(t, Text("2"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Equal(t, Text("3"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Nil(t, elem)
 }
 
@@ -140,16 +141,16 @@ func TestContainerFirstElementContinuation(t *testing.T) {
 	}
 	elem := root.First()
 	assert.Equal(t, Text("1"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Equal(t, Text("2"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Equal(t, Text("3"), elem.Node())
-	elem = elem.Next()
+	elem, _ = elem.Next()
 	assert.Nil(t, elem)
 }
 
 func TestSingleChoice(t *testing.T) {
-	root := Container{
+	c := Container{
 		Name: "root",
 		Contents: []Node{
 			Container{
@@ -176,10 +177,11 @@ func TestSingleChoice(t *testing.T) {
 			},
 			Done{},
 		},
-	}.First()
+	}
 	var b strings.Builder
 	w := glue.NewWriter(&b)
-	choices := ContinueT(t, w, Init(root, nil), root)
+	root, eval := Init(c, nil)
+	choices := ContinueT(t, w, eval, root)
 	w.WriteEnd()
 	assert.Equal(t, "Once upon a time...\n", b.String())
 	choiceNames := make([]string, len(choices))
@@ -244,7 +246,7 @@ type TBMinimal interface {
 	assert.TestingT
 }
 
-func load(t TBMinimal, fn string) (Element, ListDefs) {
+func load(t TBMinimal, fn string) (Container, ListDefs) {
 	t.Helper()
 	f, err := os.Open(fn)
 	assert.NoError(t, err)
@@ -284,6 +286,7 @@ func TestSamples(t *testing.T) {
 		"random-shuffle",
 		"random-shuffle-text",
 		"sample",
+		"seq-text",
 		"stitch",
 		"tempvar",
 		"threads",
@@ -295,14 +298,15 @@ func TestSamples(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			base := "./testdata/" + name + ".ink"
 			expected := readfile(t, base+".txt")
-			root, listDefs := load(t, base+".json")
+			container, listDefs := load(t, base+".json")
 			var b strings.Builder
 			w := glue.NewWriter(&b)
 			write := stringWriteFunc(func(s string) (int, error) {
 				t.Logf("%q", s)
 				return w.WriteString(s)
 			})
-			choices := ContinueT(t, write, Init(root, listDefs), root)
+			root, eval := Init(container, listDefs)
+			choices := ContinueT(t, write, eval, root)
 			for len(choices) > 0 {
 				w.WriteEnd()
 				b.WriteRune('\n')
