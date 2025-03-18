@@ -46,7 +46,9 @@ func (e StepEvaluator) Step(el Element) (Output, *Choice, Element, Evaluator) {
 		// FIXME end is supposed to unwind the full stack
 		return "", nil, nil, StepEvaluator{Stack: e.Stack, Stepper: BaseEvaluator{}}
 	}
-	out, choice, elem, stack, stepper := e.Stepper.Step(e.Stack, el)
+	stack := e.Stack
+	stack = stack.Visit(el.Address())
+	out, choice, elem, stack, stepper := e.Stepper.Step(stack, el)
 	if choice != nil {
 		choiceStack := stack.ResetChoiceCount()
 		if !choice.IsInvisibleDefault {
@@ -150,7 +152,6 @@ type BaseEvaluator struct {
 }
 
 func (e BaseEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
-	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
 		return Output(n), nil, el.Next(), stack, e
@@ -310,7 +311,6 @@ type EvalEvaluator struct {
 }
 
 func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
-	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case BeginStringEval:
 		return "", nil, el.Next(), stack, StringEvaluator{Prev: e}
@@ -498,7 +498,6 @@ type StringEvaluator struct {
 }
 
 func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Element, *CallFrame, Stepper) {
-	stack = stack.Visit(el.Address())
 	switch n := el.Node().(type) {
 	case Text:
 		return "", nil, el.Next(), stack, e.pushText(string(n))
