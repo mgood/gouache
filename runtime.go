@@ -555,14 +555,24 @@ func (e EvalEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, Elem
 }
 
 func resolve(base, addr Address) Address {
-	after, ok := strings.CutPrefix(string(addr), ".^")
-	if !ok {
-		return addr
-	}
-	if after == "" {
+	if addr == ".^" {
 		return base
 	}
-	return resolve(base.Parent(), Address(after))
+	if !strings.HasPrefix(string(addr), ".^.") {
+		return addr
+	}
+	name, _ := strings.CutPrefix(string(addr), ".^")
+	for {
+		if base == "" {
+			return addr
+		}
+		if after, ok := strings.CutPrefix(name, ".^"); ok {
+			base = base.Parent()
+			name = after
+		} else {
+			return base + Address(after)
+		}
+	}
 }
 
 type StringEvaluator struct {
