@@ -101,14 +101,12 @@ func TestInkProofInk(t *testing.T) {
 			skipReasons := map[string]string{
 				"I059": "tunnel choice stack",
 				"I066": "tunnel self timeout",
-				"I079": "visit counts",
 				"I098": "knot & thread interaction",
 				"I099": "tags",
 				"I100": "tags",
 				"I101": "threads",
 				"I104": "thread newline?",
 				"I108": "tunnels",
-				"I109": "visit counts",
 				"I111": "sequence",
 				"I122": "eval stack",
 				"I128": "visit counts",
@@ -145,6 +143,9 @@ func TestInkProofInk(t *testing.T) {
 			}
 			w.WriteEnd()
 			actual := b.String()
+			if !strings.HasSuffix(actual, "\n") {
+				actual += "\n"
+			}
 			assert.Equal(t, expected, actual)
 		})
 	}

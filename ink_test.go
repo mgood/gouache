@@ -260,6 +260,9 @@ func readfile(t TBMinimal, fn string) string {
 	t.Helper()
 	b, err := os.ReadFile(fn)
 	require.NoError(t, err)
+	if len(b) == 0 {
+		return "\n"
+	}
 	return string(b)
 }
 
