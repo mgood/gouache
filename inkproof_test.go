@@ -78,6 +78,30 @@ func readjson[T any](t *testing.T, fn string) T {
 }
 
 func TestInkProofInk(t *testing.T) {
+	runOnly := ""
+	skipReason := func(name string) string {
+		if runOnly != "" {
+			if name == runOnly {
+				return ""
+			}
+			return fmt.Sprintf("only running %s", runOnly)
+		}
+		return map[string]string{
+			"I059": "tunnel choice stack",
+			"I066": "tunnel self timeout",
+			"I098": "knot & thread interaction",
+			"I099": "tags",
+			"I100": "tags",
+			"I101": "threads",
+			"I104": "thread newline?",
+			"I108": "tunnels",
+			"I111": "sequence",
+			"I122": "eval stack",
+			"I128": "visit counts",
+			"I130": "knots & thread interaction",
+		}[name]
+	}
+
 	root := "./testdata/ink-proof/ink"
 	contents, err := os.ReadDir(root)
 	if errors.Is(err, os.ErrNotExist) {
@@ -98,22 +122,8 @@ func TestInkProofInk(t *testing.T) {
 			if meta.Hide != nil {
 				t.Skipf("hidden by metadata.json: %v", meta.Hide)
 			}
-			skipReasons := map[string]string{
-				"I059": "tunnel choice stack",
-				"I066": "tunnel self timeout",
-				"I098": "knot & thread interaction",
-				"I099": "tags",
-				"I100": "tags",
-				"I101": "threads",
-				"I104": "thread newline?",
-				"I108": "tunnels",
-				"I111": "sequence",
-				"I122": "eval stack",
-				"I128": "visit counts",
-				"I130": "knots & thread interaction",
-			}
-			if reason, ok := skipReasons[name]; ok {
-				t.Skipf("%s is a known failure: %s", name, reason)
+			if reason := skipReason(name); reason != "" {
+				t.Skipf("%s: %s", name, reason)
 			}
 			expected := readfile(t, filepath.Join(base, "transcript.txt"))
 			input := openfile(t, filepath.Join(base, "input.txt"))
