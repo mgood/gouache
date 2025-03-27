@@ -588,6 +588,10 @@ func (e StringEvaluator) Step(stack *CallFrame, el Element) (Output, *Choice, El
 	case NoOp:
 		next, stack := visitNext(el, stack)
 		return "", nil, next, stack, e
+	case Pop:
+		_, stack = stack.PopVal()
+		next, stack := visitNext(el, stack)
+		return "", nil, next, stack, e
 	case BeginEval:
 		next, stack := visitNext(el, stack)
 		return "", nil, next, stack, StringWrappedEvaluator{
