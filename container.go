@@ -118,21 +118,10 @@ func (c *Container) Find(name Address) (Element, []VisitAddr) {
 
 func (c *Container) find(key string) (Element, []VisitAddr) {
 	if index, err := strconv.Atoi(key); err == nil {
-		if child := c.at(index); child != nil {
-			addr, _ := child.Address()
-			return *child, []VisitAddr{{
-				Addr:       addr,
-				Flags:      c.Flags,
-				EntryIndex: index,
-			}}
-		}
-		return nil, nil
+		return c.atNoFlatten(index).Flatten()
 	}
 	if child := c.findContainer(key); child != nil {
-		return child.First(), []VisitAddr{{
-			Addr:  child.Address(),
-			Flags: child.Flags,
-		}}
+		return child.atNoFlatten(0).Flatten()
 	}
 	return nil, nil
 }
