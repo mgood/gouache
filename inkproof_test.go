@@ -92,11 +92,7 @@ func TestInkProofInk(t *testing.T) {
 			"I098": "knot & thread interaction",
 			"I099": "tags",
 			"I100": "tags",
-			"I101": "threads",
 			"I104": "thread newline?",
-			"I108": "tunnels",
-			"I111": "sequence",
-			"I122": "eval stack",
 			"I128": "visit counts",
 			"I130": "knots & thread interaction",
 		}[name]
